@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version="0.0.4-dev"
+version="0.0.4"
 echo "Version $version"
 echo
 
