@@ -59,10 +59,15 @@ temporaryVersionFile="/tmp/version.$$"
 versionName=$2.$3.$4;
 versionNameAfter=${5:-$2.$3.$(( $4 + 1 ))-dev}
 
+tagName="v$versionName"
+
 
 echo "Your version:     $versionName";
 echo "The next version: $versionNameAfter";
 echo "The version file: $versionFileUri";
+echo
+echo "Make sure you're on the right (develop) branch:"
+git branch
 echo
 echo "Hit enter to continue..."
 read
@@ -72,9 +77,19 @@ sed  "s/$versionRegex/$versionName/" "$versionFileUri" > "$temporaryVersionFile"
 echo "Commiting the change" &&
 git commit -am "Upgrading version to $versionName" &&
 echo "Tagging the commit" &&
-git tag -a "v$versionName" &&
+git tag -a "$tagName" &&
 echo "Writing $versionNameAfter to $versionFileUri" &&
 sed  "s/$versionRegex/$versionNameAfter/" "$versionFileUri" > "$temporaryVersionFile" && cat "$temporaryVersionFile" > "$versionFileUri" && rm "$temporaryVersionFile" &&
-git commit -am "Upgrading version to $versionNameAfter"
+git commit -am "Upgrading version to $versionNameAfter" &&
+echo -n "Do you want to merge the tag $tagName to master? (Y n)" &&
+read mergeToMaster
+
+if [ $mergeToMaster = '' ] || [ $mergeToMaster = 'Y' ] || [ $mergeToMaster = 'y' ]; then
+  echo "Checking out master"
+  git checkout master
+  echo "Merging $tagName"
+  git merge "$tagName"
+fi
+
 
 echo
