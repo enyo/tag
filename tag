@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=0.0.0
+version=0.0.2-dev
 echo "Version $version"
 echo
 
@@ -72,10 +72,9 @@ sed  "s/$versionRegex/$versionName/" "$versionFileUri" > "$temporaryVersionFile"
 echo "Commiting the change" &&
 git commit -am "Upgrading version to $versionName" &&
 echo "Tagging the commit" &&
-git tag -a &&
+git tag -a "v$versionName" &&
 echo "Writing $versionNameAfter to $versionFileUri" &&
 sed  "s/$versionRegex/$versionNameAfter/" "$versionFileUri" > "$temporaryVersionFile" && cat "$temporaryVersionFile" > "$versionFileUri" && rm "$temporaryVersionFile" &&
 git commit -am "Upgrading version to $versionNameAfter"
 
 echo
-#sed  "s/define[[:space:]]*([[:space:]]*'RINCEWIND_VERSION'[[:space:]]*,[[:space:]]*'[^)]*'[[:space:]]*)[[:space:]]*;/test/" ./rincewind.php
