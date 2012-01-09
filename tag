@@ -89,6 +89,8 @@ if [ $mergeToMaster = '' ] || [ $mergeToMaster = 'Y' ] || [ $mergeToMaster = 'y'
   git checkout master
   echo "Merging $tagName"
   git merge "$tagName"
+  echo "Checking out develop again"
+  git checkout develop
 fi
 
 
