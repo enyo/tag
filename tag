@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version="0.0.5"
+version="0.0.6-dev"
 echo "(Tag script version $version)"
 echo
 
