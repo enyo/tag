@@ -80,7 +80,8 @@ echo "Tagging the commit" &&
 git tag -a "$tagName" &&
 echo "Writing $versionNameAfter to $versionFileUri" &&
 sed  "s/$versionRegex/$versionNameAfter/" "$versionFileUri" > "$temporaryVersionFile" && cat "$temporaryVersionFile" > "$versionFileUri" && rm "$temporaryVersionFile" &&
-git commit -am "Upgrading version to $versionNameAfter" &&
+git commit -am "Upgrading version to $versionNameAfter"
+
 echo -n "Do you want to merge the tag $tagName to master? (Y n)" &&
 read mergeToMaster
 
