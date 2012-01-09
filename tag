@@ -1,7 +1,7 @@
 #!/bin/bash
 
-version="0.0.4"
-echo "Version $version"
+version="0.0.5"
+echo "(Tag script version $version)"
 echo
 
 
@@ -9,11 +9,31 @@ echo
 printUsage() {
   echo
   echo Usage:
-  echo "  $0 versionFile [ versionX versionY versionZ [ versionNameAfter ] ]"
+  echo "  $0 versionFile [ versionName [ versionNameAfter ] ]"
   echo
-  echo If versionAfter is not provided, it will be versionName-dev.
+  echo If versionNameAfter is not provided, it will be versionName-dev.
   echo
   exit 1
+}
+
+answer() {
+  local answer
+  echo -n "$1 (Y n)"
+  read answer
+
+  if [ "$answer" = '' ] || [ "$answer" = 'Y' ] || [ "$answer" = 'y' ]; then
+    return 0;
+  else
+    return 1;
+  fi
+}
+
+parts=()
+
+splitVersion() {
+  for i in $(echo -n $1 | tr . " "); do
+    parts+=($i)
+  done;
 }
 
 
@@ -44,34 +64,51 @@ if [ $matches -ne 1 ]; then
   exit
 fi
 
+previousVersion=$(grep -o "$versionRegex" "$versionFileUri")
 
-echo "The line that will be replaced:"
+echo
+echo "Detected version $previousVersion in line: "
 grep "$versionRegex" "$versionFileUri"
 echo
 
-if [ $# -lt 4 ]; then
-  printUsage;
+previousVersionNoDev=${previousVersion/-dev/}
+
+wasDevVersion=1
+
+if [ "$previousVersion" = "$previousVersionNoDev" ]; then wasDevVersion=0; fi
+
+if [ "$wasDevVersion" -eq 1 ]; then
+  nextVersion=$previousVersionNoDev;
+else
+  splitVersion "$previousVersionNoDev"
+
+  nextVersion="${parts[0]}.${parts[1]}.$(( ${parts[2]} + 1 ))"
 fi
 
 
 temporaryVersionFile="/tmp/version.$$"
 
-versionName=$2.$3.$4;
-versionNameAfter=${5:-$2.$3.$(( $4 + 1 ))-dev}
+versionName=${2:-$nextVersion}
+
+splitVersion "$versionName"
+
+versionNameAfter=${3:-${parts[0]}.${parts[1]}.$(( ${parts[2]} + 1 ))-dev}
 
 tagName="v$versionName"
 
-
-echo "Your version:     $versionName";
-echo "The next version: $versionNameAfter";
-echo "The version file: $versionFileUri";
+echo "========================================";
+echo " Current version:    $previousVersion";
+echo " Next version:       $versionName";
+echo " Next dev version:   $versionNameAfter";
+echo " The version file:   $versionFileUri";
+echo "========================================";
 echo
 echo "Make sure you're on the right (develop) branch:"
 git branch
 echo
-echo "Hit enter to continue..."
+echo -n "Hit enter to continue..."
 read
-
+echo
 echo "Writing $versionName to $versionFileUri" &&
 sed  "s/$versionRegex/$versionName/" "$versionFileUri" > "$temporaryVersionFile" && cat "$temporaryVersionFile" > "$versionFileUri" && rm "$temporaryVersionFile" &&
 echo "Commiting the change" &&
@@ -82,10 +119,8 @@ echo "Writing $versionNameAfter to $versionFileUri" &&
 sed  "s/$versionRegex/$versionNameAfter/" "$versionFileUri" > "$temporaryVersionFile" && cat "$temporaryVersionFile" > "$versionFileUri" && rm "$temporaryVersionFile" &&
 git commit -am "Upgrading version to $versionNameAfter"
 
-echo -n "Do you want to merge the tag $tagName to master? (Y n)" &&
-read mergeToMaster
 
-if [ "$mergeToMaster" = '' ] || [ "$mergeToMaster" = 'Y' ] || [ "$mergeToMaster" = 'y' ]; then
+if answer "Do you want to merge the tag $tagName to master?"; then
   echo "Checking out master"
   git checkout master
   echo "Merging $tagName"
