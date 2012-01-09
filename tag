@@ -84,7 +84,7 @@ git commit -am "Upgrading version to $versionNameAfter" &&
 echo -n "Do you want to merge the tag $tagName to master? (Y n)" &&
 read mergeToMaster
 
-if [ $mergeToMaster = '' ] || [ $mergeToMaster = 'Y' ] || [ $mergeToMaster = 'y' ]; then
+if [ "$mergeToMaster" = '' ] || [ "$mergeToMaster" = 'Y' ] || [ "$mergeToMaster" = 'y' ]; then
   echo "Checking out master"
   git checkout master
   echo "Merging $tagName"
