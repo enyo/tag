@@ -8,4 +8,4 @@
 6. Optionally merges the tag to master.
 
 
-The mergin to master is based on the [successful branching model](http://nvie.com/posts/a-successful-git-branching-model/).
+The merging to master is based on the [successful branching model](http://nvie.com/posts/a-successful-git-branching-model/).
