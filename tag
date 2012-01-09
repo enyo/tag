@@ -11,9 +11,21 @@ printUsage() {
   echo Usage:
   echo "  $0 versionFile [ versionX versionY versionZ [ versionNameAfter ] ]"
   echo
-  echo If versionAfter is not provided, it will be versionName-dev.
+  echo If versionNameAfter is not provided, it will be versionName-dev.
   echo
   exit 1
+}
+
+answer() {
+  local answer
+  echo -n "$1 (Y n)"
+  read answer
+
+  if [ "$answer" = '' ] || [ "$answer" = 'Y' ] || [ "$answer" = 'y' ]; then
+    return 0;
+  else
+    return 1;
+  fi
 }
 
 
@@ -44,10 +56,15 @@ if [ $matches -ne 1 ]; then
   exit
 fi
 
+foundVersion=$(grep -o "$versionRegex" "$versionFileUri")
 
-echo "The line that will be replaced:"
+echo
+echo -n "Detected version $foundVersion in line: "
 grep "$versionRegex" "$versionFileUri"
 echo
+
+#xxx=${foundVersion/-dev/}
+#echo $xxx;
 
 if [ $# -lt 4 ]; then
   printUsage;
@@ -82,10 +99,8 @@ echo "Writing $versionNameAfter to $versionFileUri" &&
 sed  "s/$versionRegex/$versionNameAfter/" "$versionFileUri" > "$temporaryVersionFile" && cat "$temporaryVersionFile" > "$versionFileUri" && rm "$temporaryVersionFile" &&
 git commit -am "Upgrading version to $versionNameAfter"
 
-echo -n "Do you want to merge the tag $tagName to master? (Y n)" &&
-read mergeToMaster
 
-if [ "$mergeToMaster" = '' ] || [ "$mergeToMaster" = 'Y' ] || [ "$mergeToMaster" = 'y' ]; then
+if answer "Do you want to merge the tag $tagName to master?"; then
   echo "Checking out master"
   git checkout master
   echo "Merging $tagName"
