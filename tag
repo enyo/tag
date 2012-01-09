@@ -1,7 +1,7 @@
 #!/bin/bash
 
 version="0.0.5-dev"
-echo "Version $version"
+echo "(Tag script version $version)"
 echo
 
 
@@ -9,7 +9,7 @@ echo
 printUsage() {
   echo
   echo Usage:
-  echo "  $0 versionFile [ versionX versionY versionZ [ versionNameAfter ] ]"
+  echo "  $0 versionFile [ versionName [ versionNameAfter ] ]"
   echo
   echo If versionNameAfter is not provided, it will be versionName-dev.
   echo
@@ -26,6 +26,14 @@ answer() {
   else
     return 1;
   fi
+}
+
+parts=()
+
+splitVersion() {
+  for i in $(echo -n $1 | tr . " "); do
+    parts+=($i)
+  done;
 }
 
 
@@ -56,39 +64,51 @@ if [ $matches -ne 1 ]; then
   exit
 fi
 
-foundVersion=$(grep -o "$versionRegex" "$versionFileUri")
+previousVersion=$(grep -o "$versionRegex" "$versionFileUri")
 
 echo
-echo -n "Detected version $foundVersion in line: "
+echo "Detected version $previousVersion in line: "
 grep "$versionRegex" "$versionFileUri"
 echo
 
-#xxx=${foundVersion/-dev/}
-#echo $xxx;
+previousVersionNoDev=${previousVersion/-dev/}
 
-if [ $# -lt 4 ]; then
-  printUsage;
+wasDevVersion=1
+
+if [ "$previousVersion" = "$previousVersionNoDev" ]; then wasDevVersion=0; fi
+
+if [ "$wasDevVersion" -eq 1 ]; then
+  nextVersion=$previousVersionNoDev;
+else
+  splitVersion "$previousVersionNoDev"
+
+  nextVersion="${parts[0]}.${parts[1]}.$(( ${parts[2]} + 1 ))"
 fi
 
 
 temporaryVersionFile="/tmp/version.$$"
 
-versionName=$2.$3.$4;
-versionNameAfter=${5:-$2.$3.$(( $4 + 1 ))-dev}
+versionName=${2:-$nextVersion}
+
+splitVersion "$versionName"
+
+versionNameAfter=${3:-${parts[0]}.${parts[1]}.$(( ${parts[2]} + 1 ))-dev}
 
 tagName="v$versionName"
 
-
-echo "Your version:     $versionName";
-echo "The next version: $versionNameAfter";
-echo "The version file: $versionFileUri";
+echo "========================================";
+echo " Current version:    $previousVersion";
+echo " Next version:       $versionName";
+echo " Next dev version:   $versionNameAfter";
+echo " The version file:   $versionFileUri";
+echo "========================================";
 echo
 echo "Make sure you're on the right (develop) branch:"
 git branch
 echo
-echo "Hit enter to continue..."
+echo -n "Hit enter to continue..."
 read
-
+echo
 echo "Writing $versionName to $versionFileUri" &&
 sed  "s/$versionRegex/$versionName/" "$versionFileUri" > "$temporaryVersionFile" && cat "$temporaryVersionFile" > "$versionFileUri" && rm "$temporaryVersionFile" &&
 echo "Commiting the change" &&
