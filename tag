@@ -18,7 +18,7 @@ printUsage() {
 
 answer() {
   local answer
-  echo -n "$1 (Y n)"
+  echo -n "$1 (Y n) "
   read answer
 
   if [ "$answer" = '' ] || [ "$answer" = 'Y' ] || [ "$answer" = 'y' ]; then
@@ -53,28 +53,29 @@ versionRegex='[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\(-dev\)*'
 
 matches=$(grep -c "$versionRegex" "$versionFileUri");
 
-if [ $matches -ne 1 ]; then
-  echo "Error: There have been $matches matches of a version number."
-  echo
-  if [ $matches -gt 1 ]; then
-    echo "The lines that matched:"
-    grep "$versionRegex" "$versionFileUri"
-  fi
+
+if [ $matches -eq 0 ]; then
+  echo "Error: There have been no matches of any version number."
   echo
   exit
 fi
+if [ $matches -gt 1 ]; then
+  echo "Multiple versions detected. The first match will be used."
+fi
 
-previousVersion=$(grep -o "$versionRegex" "$versionFileUri")
 
-echo
-echo "Detected version $previousVersion in line: "
-grep "$versionRegex" "$versionFileUri"
-echo
-
+previousVersion=$(grep -o "$versionRegex" "$versionFileUri" | sed -n 1p)
 previousVersionNoDev=${previousVersion/-dev/}
 
-wasDevVersion=1
 
+echo
+echo "Detected version $previousVersion in line(s): "
+grep "$previousVersion" "$versionFileUri"
+echo
+
+
+
+wasDevVersion=1
 if [ "$previousVersion" = "$previousVersionNoDev" ]; then wasDevVersion=0; fi
 
 if [ "$wasDevVersion" -eq 1 ]; then
@@ -110,13 +111,13 @@ echo -n "Hit enter to continue..."
 read
 echo
 echo "Writing $versionName to $versionFileUri" &&
-sed  "s/$versionRegex/$versionName/" "$versionFileUri" > "$temporaryVersionFile" && cat "$temporaryVersionFile" > "$versionFileUri" && rm "$temporaryVersionFile" &&
+sed  "s/$previousVersion/$versionName/" "$versionFileUri" > "$temporaryVersionFile" && cat "$temporaryVersionFile" > "$versionFileUri" && rm "$temporaryVersionFile" &&
 echo "Commiting the change" &&
 git commit -am "Upgrading version to $versionName" &&
 echo "Tagging the commit" &&
 git tag -a "$tagName" &&
 echo "Writing $versionNameAfter to $versionFileUri" &&
-sed  "s/$versionRegex/$versionNameAfter/" "$versionFileUri" > "$temporaryVersionFile" && cat "$temporaryVersionFile" > "$versionFileUri" && rm "$temporaryVersionFile" &&
+sed  "s/$versionName/$versionNameAfter/" "$versionFileUri" > "$temporaryVersionFile" && cat "$temporaryVersionFile" > "$versionFileUri" && rm "$temporaryVersionFile" &&
 git commit -am "Upgrading version to $versionNameAfter"
 
 
