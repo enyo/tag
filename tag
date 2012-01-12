@@ -15,7 +15,9 @@ if [ ! -f "$configFile" ]; then
   echo "files=\"$files\"" > "$configFile"
   echo
   echo "Config file created."
+  echo "Add $configFile to git and commit it. Then start this script again."
   echo
+  exit
 fi
 
 
@@ -179,7 +181,7 @@ if answer "Do you want to merge the tag $tagName to master?"; then
   echo "Checking out master"
   git checkout master || fail
   echo "Merging $tagName"
-  git merge "$tagName" || fail
+  git merge --no-ff "$tagName" || fail
   echo "Checking out develop again"
   git checkout develop
 fi
