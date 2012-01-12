@@ -1,15 +1,47 @@
 #!/bin/bash
 
 version="0.0.7-dev"
-echo "(Tag script version $version)"
+configFile=".tagconfig"
+
+echo "(Tag script version $version, config file: $configFile)"
 echo
 
+
+if [ ! -f "$configFile" ]; then
+  echo "There is no $configFile file.";
+  echo
+  echo "To create one, enter the files, separated by space, in which the tag script should replace versions:"
+  read files
+  echo "files=\"$files\"" > "$configFile"
+  echo
+  echo "Config file created."
+  echo
+fi
+
+
+
+# Read the config
+source $configFile
+
+for i in $files; do
+  if [ ! -f "$i" ]; then
+    echo "The version file '$i' does not exist";
+    echo
+    exit 1;
+  fi
+done;
+
+
+
+
+
+versionFileUri=${files%% *}
 
 
 printUsage() {
   echo
   echo Usage:
-  echo "  $0 versionFile [ versionName [ versionNameAfter ] ]"
+  echo "  $0 [ versionName [ versionNameAfter ] ]"
   echo
   echo If versionNameAfter is not provided, it will be versionName-dev.
   echo
@@ -36,18 +68,26 @@ splitVersion() {
   done;
 }
 
-
-if [ $# -lt 1 ]; then
-  printUsage;
-fi
-
-versionFileUri="$1"
-
-if [ ! -f "$versionFileUri" ]; then
-  echo "The version file '$versionFileUri' does not exist";
+fail() {
+  echo "Command failed. Exiting."
   echo
-  exit 1;
-fi
+  exit
+}
+
+replaceVersion() {
+  local file="$1"
+  local search="$2"
+  local replace="$3"
+  local temporaryVersionFile="/tmp/version.$$"
+
+  echo "Replacing $2 with $3 in $1"
+  sed  "s/$search/$replace/" "$file" > "$temporaryVersionFile" || fail
+  cat "$temporaryVersionFile" > "$i" || fail
+  rm "$temporaryVersionFile" || fail
+
+}
+
+
 
 versionRegex='[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\(-dev\)*'
 
@@ -70,7 +110,11 @@ previousVersionNoDev=${previousVersion/-dev/}
 
 echo
 echo "Detected version $previousVersion in line(s): "
-grep "$previousVersion" "$versionFileUri"
+for i in $files; do
+  echo
+  echo "$i: "
+  grep "$previousVersion" "$i"
+done
 echo
 
 
@@ -87,13 +131,11 @@ else
 fi
 
 
-temporaryVersionFile="/tmp/version.$$"
-
-versionName=${2:-$nextVersion}
+versionName=${1:-$nextVersion}
 
 splitVersion "$versionName"
 
-versionNameAfter=${3:-${parts[0]}.${parts[1]}.$(( ${parts[2]} + 1 ))-dev}
+versionNameAfter=${2:-${parts[0]}.${parts[1]}.$(( ${parts[2]} + 1 ))-dev}
 
 tagName="v$versionName"
 
@@ -110,22 +152,27 @@ echo
 echo -n "Hit enter to continue..."
 read
 echo
-echo "Writing $versionName to $versionFileUri" &&
-sed  "s/$previousVersion/$versionName/" "$versionFileUri" > "$temporaryVersionFile" && cat "$temporaryVersionFile" > "$versionFileUri" && rm "$temporaryVersionFile" &&
-echo "Commiting the change" &&
-git commit -am "Upgrading version to $versionName" &&
-echo "Tagging the commit" &&
-git tag -a "$tagName" &&
-echo "Writing $versionNameAfter to $versionFileUri" &&
-sed  "s/$versionName/$versionNameAfter/" "$versionFileUri" > "$temporaryVersionFile" && cat "$temporaryVersionFile" > "$versionFileUri" && rm "$temporaryVersionFile" &&
-git commit -am "Upgrading version to $versionNameAfter"
+for i in $files; do
+  replaceVersion "$i" "$previousVersion" "$versionName"
+done
+
+echo "Commiting the change"
+git commit -am "Upgrading version to $versionName" || fail
+echo "Tagging the commit"
+git tag -a "$tagName" || fail
+
+for i in $files; do
+  replaceVersion "$i" "$versionName" "$versionNameAfter"
+done
+
+git commit -am "Upgrading version to $versionNameAfter" || fail
 
 
 if answer "Do you want to merge the tag $tagName to master?"; then
   echo "Checking out master"
-  git checkout master
+  git checkout master || fail
   echo "Merging $tagName"
-  git merge "$tagName"
+  git merge "$tagName" || fail
   echo "Checking out develop again"
   git checkout develop
 fi
