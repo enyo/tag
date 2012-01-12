@@ -63,6 +63,7 @@ answer() {
 parts=()
 
 splitVersion() {
+  parts=()
   for i in $(echo -n $1 | tr . " "); do
     parts+=($i)
   done;
@@ -134,7 +135,6 @@ fi
 versionName=${1:-$nextVersion}
 
 splitVersion "$versionName"
-
 versionNameAfter=${2:-${parts[0]}.${parts[1]}.$(( ${parts[2]} + 1 ))-dev}
 
 tagName="v$versionName"
@@ -155,20 +155,27 @@ echo
 for i in $files; do
   replaceVersion "$i" "$previousVersion" "$versionName"
 done
+echo
 
 echo "Commiting the change"
 git commit -am "Upgrading version to $versionName" || fail
-echo "Tagging the commit"
-git tag -a "$tagName" || fail
+echo
+
+echo -n "Tagging the commit. Enter your message: "
+read tagMessage
+git tag -a "$tagName" -m "$tagMessage" || fail
+echo
 
 for i in $files; do
   replaceVersion "$i" "$versionName" "$versionNameAfter"
 done
+echo
 
 git commit -am "Upgrading version to $versionNameAfter" || fail
-
+echo
 
 if answer "Do you want to merge the tag $tagName to master?"; then
+  echo
   echo "Checking out master"
   git checkout master || fail
   echo "Merging $tagName"
