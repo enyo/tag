@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version="0.0.8"
+version="0.0.9-dev"
 configFile=".tagconfig"
 
 echo "(Tag script version $version, config file: $configFile)"
