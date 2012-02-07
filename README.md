@@ -62,6 +62,6 @@ This is what the script actually does:
 3. Tags the commit. (Asks you to specify a tag message).
 4. Changes the version to the next development version. (The default is the increased next version with `-dev` at the end).
 5. Commits the change with a commit message like "Upgrading to version 2.1.5-dev".
-6. Optionally merges the tag to master. (Checks out master, merges the develop branch, checks out develop again)
+6. Optionally merges the tag to master. (Checks out master, merges the develop branch with --no-ff, checks out develop again)
 7. Optionally does `git push --all && git push --tags`
 
