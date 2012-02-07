@@ -4,7 +4,7 @@
 var
     fs = require('fs')
   , util = require('util')
-  , exec = require('child_process').exec
+  , spawn = require('child_process').spawn
   , version = '1.0.1-dev'
   , configFileUri = './.tagconfig'
   , versionRegex = '[0-9]+\\.[0-9]+\\.[0-9]+(?:-dev)?'
@@ -128,7 +128,7 @@ try {
   var child;
 
 // executes `pwd`
-  execWithCallback("git branch --no-color", function() {
+  spawnWithCallback('git', [ 'branch', '--color' ], function() {
     nl();
     console.log('Press enter to continue (Ctrl-c to abort)...');
 
@@ -142,14 +142,14 @@ try {
       replaceVersion(config.files, nextVersion);
 
       console.log('Commiting the change.');
-      execWithCallback('git commit -am "Upgrading version to ' + nextVersion + '"', function() {
+      spawnWithCallback('git', [ 'commit', '-am', 'Upgrading version to ' + nextVersion ], function() {
         nl();
         console.log('Tagging the commit. Enter your message: ')
         readFromStdIn(function (text) {
           nl();
-          execWithCallback('git tag -a "' + tagName + '" -m "' + text.replace(/\"/, '\\"') + '"', function() {
+          spawnWithCallback('git', [ 'tag', '-a', tagName, '-m', text.replace(/\"/, '\\"') ], function() {
             replaceVersion(config.files, nextDevVersion);
-            execWithCallback('git commit -am "Upgrading version to ' + nextDevVersion + '"', function() {
+            spawnWithCallback('git', [ 'commit', '-am', 'Upgrading version to ' + nextDevVersion ], function() {
 
               nl();
               console.log('Do you want to merge the tag %s to master? [ Y n ]', tagName);
@@ -157,26 +157,21 @@ try {
                 nl();
                 if (text !== 'Y\n' && text !== '\n') return;
 
-                execWithCallback('git checkout master', function() {
-                  nl();
+                spawnWithCallback('git', [ 'checkout', 'master' ], function() {
                   console.log('Merging %s', tagName);
-                  execWithCallback('git merge --no-ff ' + tagName, function() {
+                  spawnWithCallback('git', [ 'merge', '--no-ff', tagName ], function() {
                     nl();
-                    execWithCallback('git checkout develop', function() {
+                    spawnWithCallback('git', [ 'checkout', 'develop' ], function() {
                       nl();
                     });
                   });
                 });
               });
-
             });
           });
         });
-
       });
-
     });
-
   });
 }
 catch (e) {
@@ -213,16 +208,10 @@ function replaceVersion(files, version) {
 }
 
 
-function execWithCallback(command, callback) {
-  command = exec(command, function (error, stdout, stderr) {
-    if (stdout) util.print(stdout);
-    if (stderr) util.print(stderr);
-    if (error !== null) {
-      console.error('Exec error: ', error);
-      process.exit();
-      return;
-    }
-  });
+function spawnWithCallback(command, arguments, callback) {
+  command = spawn(command, arguments);
+
+  command.stdout.pipe(process.stdout, { end: false });
 
   command.on('exit', function(code) {
     if (code === null) {
