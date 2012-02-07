@@ -42,7 +42,7 @@ The next time you start the script you will see the detected version, and the pr
 
 ### Manual versioning
 
-When you don't want to upgrade version `1.2.3-dev` to `1.2.3`, or version `1.2.3` to `1.2.4`, you can specify the next version manually like this:
+When you **don't** want to upgrade version `1.2.3-dev` to `1.2.3`, or version `1.2.3` to `1.2.4`, you can specify the next version manually like this:
 
     /path/to/tag 2.0.0
 
@@ -54,7 +54,7 @@ After commiting this version, the script automatically increases the version, an
 
 ## Output
 
-When calling tag, a typical output looks like this:
+When calling `tag`, a typical output looks like this:
 
     Usage (v1.1.3-dev): tag [nextVersion [nextDevVersion]]
 
