@@ -5,7 +5,7 @@ var
     fs = require('fs')
   , util = require('util')
   , spawn = require('child_process').spawn
-  , version = '1.1.0'
+  , version = '1.1.1'
   , configFileUri = './.tagconfig'
   , versionRegex = '[0-9]+\\.[0-9]+\\.[0-9]+(?:-dev)?'
   , previousVersion
@@ -231,6 +231,16 @@ try {
                     console.log('Checking out develop again');
                     spawnWithCallback('git', [ 'checkout', 'develop' ], function() {
                       nl();
+                      console.log('Do you want to push --all and push --tags? [ Y n ]');
+                      readFromStdIn(function(text) {
+                        nl();
+                        if (text !== 'Y' && text !== '') return;
+                        spawnWithCallback('git', [ 'push', '--all' ], function() {
+                          spawnWithCallback('git', [ 'push', '--tags' ], function() {
+                            nl();
+                          });
+                        });
+                      });
                     });
                   });
                 });
