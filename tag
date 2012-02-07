@@ -16,21 +16,88 @@ var
 
 
 
-console.log("\nTag script version %s, config file: %s, Usage:", version, configFileUri);
+console.log("\nTag-Script version %s, config file: %s\nUsage:", version, configFileUri);
 
 console.log(" tag [ nextVersion [ nextDevVersion ] ]\n");
-console.log(' # If `nextVersion` is not provided, the last digit will either be increased by one, or -dev removed.');
-console.log(' # If `nextDevVersion` is not provided, it will be nextVersion-dev.');
 
-nl();
+
+function createConfig() {
+  console.log("There is no %s file.", configFileUri);
+  nl();
+  console.log("To create one, please specify all files that should be parsed.");
+  nl();
+
+
+  var getFile = function(files, onFinishCallback) {
+    nl();
+    var file = {};
+    console.log("Filename (Empty ends the list):");
+    readFromStdIn(function(text) {
+      if (text === '') {
+        if (files.length === 0) {
+          nl();
+          console.error("You have to provide at least one filename.");
+          nl();
+          getFile(files, onFinishCallback);
+        }
+        else {
+          onFinishCallback(files);
+          return;
+        }
+      }
+      else {
+        file.name = text;
+        file.regexs = [];
+        nl();
+        if (files.length === 0) {
+          console.log("The version string defines the string that should be replaced with the actual version.");
+          console.log("You can just use ### (which is the default) if you only have one version in the file, or a more detailed phrase, eg: version=\"###\"");
+          console.log("If you actually want to specify a more complex regular expression edit the .tagconfig file after but be careful to use parentheses without capturing like this: (?:stuff).");
+          nl();
+        }
+        console.log("Version string: [ ### ] ");
+        readFromStdIn(function(text) {
+          file.regexs.push(escapeRegexString(text ? text : '###'));
+          files.push(file);
+          getFile(files, onFinishCallback);
+        });
+      }
+    });
+  };
+
+  getFile([], function(files) {
+    var config = { files: files };
+    nl();
+    console.log('Writing config to %s...', configFileUri);
+    fs.writeFileSync(configFileUri, JSON.stringify(config, null, 2), 'utf8');
+    console.log('Successfully created the config.')
+    console.log('Add %s to git and commit it. Then start this script again.', configFileUri);
+    nl();
+    nl();
+
+  });
+
+
+}
+
+
 
 try {
-  
   var configStats = fs.statSync(configFileUri);
+  if (!configStats.isFile()) throw 'error';
+}
+catch (e) {
+  createConfig();
+  return;
+}
 
-  if (!configStats.isFile()) {
-    console.log('- Must create config file.')
-  }
+
+try {
+
+  console.log(' # If `nextVersion` is not provided, the last digit will either be increased by one, or -dev removed.');
+  console.log(' # If `nextDevVersion` is not provided, it will be nextVersion-dev.');
+
+  nl();
 
 
 
@@ -83,7 +150,7 @@ try {
 
   each(config.files, function(fileInfo) {
     each(fileInfo.regexInfos, function(regexInfo) {
-      console.log('\n%s (%s)', fileInfo.name, regexInfo.original);
+      console.log('\nFile: %s (Regular expression: %s)', color(fileInfo.name, 'green'), color(regexInfo.original, 'green'));
       each(regexInfo.matches, function(match) {
         console.log(' - %s', match);
       });
@@ -116,10 +183,10 @@ try {
   tagName = 'v' + nextVersion;
 
   console.log('========================================');
-  console.log(' Current version:   %s', previousVersion);
-  console.log(' Next version:      %s', nextVersion);
-  console.log(' Next dev version:  %s', nextDevVersion);
-  console.log(' Tag name:          %s', tagName);
+  console.log(' Current version:    %s', color(previousVersion, 'red+bold'));
+  console.log(' Next version:       %s', color(nextVersion, 'green'));
+  console.log(' Tag name:          %s', color(tagName, 'green'));
+  console.log(' Next dev version:   %s', color(nextDevVersion, 'blue'));
   console.log('========================================');
 
   nl();
@@ -133,7 +200,7 @@ try {
     console.log('Press enter to continue (Ctrl-c to abort)...');
 
     readFromStdIn(function (text) {
-      if (text !== '\n') {
+      if (text !== '') {
         console.log('Aborting.');
         process.exit();
       }
@@ -155,12 +222,14 @@ try {
               console.log('Do you want to merge the tag %s to master? [ Y n ]', tagName);
               readFromStdIn(function(text) {
                 nl();
-                if (text !== 'Y\n' && text !== '\n') return;
-
+                if (text !== 'Y' && text !== '') return;
+                console.log('Checking out master');
                 spawnWithCallback('git', [ 'checkout', 'master' ], function() {
+                  nl();
                   console.log('Merging %s', tagName);
                   spawnWithCallback('git', [ 'merge', '--no-ff', tagName ], function() {
                     nl();
+                    console.log('Checking out develop again');
                     spawnWithCallback('git', [ 'checkout', 'develop' ], function() {
                       nl();
                     });
@@ -208,14 +277,14 @@ function replaceVersion(files, version) {
 }
 
 
-function spawnWithCallback(command, arguments, callback) {
-  command = spawn(command, arguments);
+function spawnWithCallback(commandString, arguments, callback) {
+  command = spawn(commandString, arguments);
 
   command.stdout.pipe(process.stdout, { end: false });
 
   command.on('exit', function(code) {
-    if (code === null) {
-      console.error('Exec error: ', error);
+    if (code === null || code !== 0) {
+      console.error('Command (%s) exited with code: %d', commandString, code);
       process.exit();
       return;
     }
@@ -230,11 +299,58 @@ function readFromStdIn(callback) {
   var eventListener = function(text) {
     process.stdin.pause();
     process.stdin.removeListener('data', eventListener);
-    callback(text);
+    callback(text.replace(/^\s+|\s+$/g, ""));
   };
 
   process.stdin.on('data', eventListener);
 }
 
+function escapeRegexString(string) {
+  return string.replace(/[-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+}
 
 function nl() { console.log(); }
+
+
+
+/**
+ * Taken from: https://github.com/loopj/commonjs-ansi-color
+ */
+function color(str, color) {
+
+  var ANSI_CODES = {
+    "off": 0,
+    "bold": 1,
+    "italic": 3,
+    "underline": 4,
+    "blink": 5,
+    "inverse": 7,
+    "hidden": 8,
+    "black": 30,
+    "red": 31,
+    "green": 32,
+    "yellow": 33,
+    "blue": 34,
+    "magenta": 35,
+    "cyan": 36,
+    "white": 37,
+    "black_bg": 40,
+    "red_bg": 41,
+    "green_bg": 42,
+    "yellow_bg": 43,
+    "blue_bg": 44,
+    "magenta_bg": 45,
+    "cyan_bg": 46,
+    "white_bg": 47
+  };
+
+  if(!color) return str;
+
+  var color_attrs = color.split("+");
+  var ansi_str = "";
+  for(var i=0, attr; attr = color_attrs[i]; i++) {
+    ansi_str += "\033[" + ANSI_CODES[attr] + "m";
+  }
+  ansi_str += str + "\033[" + ANSI_CODES["off"] + "m";
+  return ansi_str;
+};
