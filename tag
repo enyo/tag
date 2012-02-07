@@ -3,7 +3,7 @@
 
 var
     fs = require('fs')
-  , sys = require('sys')
+  , util = require('util')
   , exec = require('child_process').exec
   , version = '1.0.0-dev'
   , configFileUri = './.tagconfig'
@@ -215,8 +215,8 @@ function replaceVersion(files, version) {
 
 function execWithCallback(command, callback) {
   command = exec(command, function (error, stdout, stderr) {
-    if (stdout) sys.print(stdout);
-    if (stderr) sys.print(stderr);
+    if (stdout) util.print(stdout);
+    if (stderr) util.print(stderr);
     if (error !== null) {
       console.error('Exec error: ', error);
       process.exit();
