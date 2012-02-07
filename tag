@@ -5,7 +5,7 @@ var
     fs = require('fs')
   , util = require('util')
   , exec = require('child_process').exec
-  , version = '1.0.0'
+  , version = '1.0.1-dev'
   , configFileUri = './.tagconfig'
   , versionRegex = '[0-9]+\\.[0-9]+\\.[0-9]+(?:-dev)?'
   , previousVersion
