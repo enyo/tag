@@ -52,6 +52,34 @@ After commiting this version, the script automatically increases the version, an
 
 (I strongly recommend it being a `-dev` version)
 
+## Output
+
+When calling tag, a typical output looks like this:
+
+    Usage (v1.1.3-dev): tag [nextVersion [nextDevVersion]]
+
+    Using config file ./.tagconfig
+
+
+    Matches:
+
+    File: tag (Regular expression: version = '###')
+     - version = '1.1.3-dev'
+
+
+    ========================================
+     Current version:    1.1.3-dev
+     Next version:       1.1.3
+     Tag name:          v1.1.3
+     Next dev version:   1.1.4-dev
+    ========================================
+
+    Make sure you're on the right (develop) branch: 
+    * develop
+      master
+
+    Press enter to continue (Ctrl-c to abort)...
+
 
 ## Step By Step
 
