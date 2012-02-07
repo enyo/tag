@@ -16,9 +16,10 @@ var
 
 
 
-console.log("\nTag-Script version %s, config file: %s\nUsage:", version, configFileUri);
+console.log("Usage (v%s): tag [nextVersion [nextDevVersion]]", version);
 
-console.log(" tag [ nextVersion [ nextDevVersion ] ]\n");
+nl();
+
 
 
 function createConfig() {
@@ -93,13 +94,7 @@ catch (e) {
 
 
 try {
-
-  console.log(' # If `nextVersion` is not provided, the last digit will either be increased by one, or -dev removed.');
-  console.log(' # If `nextDevVersion` is not provided, it will be nextVersion-dev.');
-
-  nl();
-
-
+  console.log("Using config file %s\n", configFileUri);
 
   try {
     var config = JSON.parse(fs.readFileSync(configFileUri, 'utf8'));
@@ -124,6 +119,10 @@ try {
       var regexInfos = {
         original: regex
       };
+      var matchCount = regex.match(/###/g) ? regex.match(/###/g).length : 0;
+      if (matchCount !== 1) {
+        throw new Error('The regular expression did contain ' + matchCount + ' occurences of ### for file: ' + fileInfo.name + ' (' + regex + ')');
+      }
       regexInfos.complete = new RegExp('(' + regex.replace('###', ')(' + versionRegex + ')(') + ')', 'gm');
       regexInfos.matches = fileInfo.content.match(regexInfos.complete);
       if (!regexInfos.matches) throw new Error('No match found in file ' + fileInfo.name + ' with regex: ' + regex);
@@ -146,7 +145,7 @@ try {
 
   nl();
 
-  console.log('Matches:');
+  console.log(color('Matches:', 'underline'));
 
   each(config.files, function(fileInfo) {
     each(fileInfo.regexInfos, function(regexInfo) {
@@ -244,7 +243,7 @@ try {
   });
 }
 catch (e) {
-  console.log('\n\nFatal error:\n\n%s', e.message);
+  console.log('\n\nFatal error:\n\n%s', color(e.message, 'red+bold'));
   nl();
 }
 
