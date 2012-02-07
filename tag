@@ -54,6 +54,8 @@ createConfig() {
       echo "You can just use ### (which is the default) if you only have one version in the file, or a more detailed phrase, eg: version=\"###\""
       echo "If you actually want to specify a more complex regular expression edit the .tagconfig file after."
       echo
+      echo "WARNING: The tag script only substitues ONE version per line!"
+      echo
     fi
 
     echo -n "Version string (###): "
@@ -131,18 +133,50 @@ fail() {
 
 replaceVersion() {
   local file="$1"
-  local search="$2"
-  # local search="lkjsdf"
+  local regex="$2"
   local replace="$3"
+
   local temporaryVersionFile="/tmp/version.$$"
 
-  echo "Replacing $search with $replace in $file"
-  sed  "s/$search/$replace/" "$file"
-  echo sed  "s/$search/$replace/" "$file"
-  exit;
-  sed  "s/$search/$replace/" "$file" > "$temporaryVersionFile" || fail
-  cat "$temporaryVersionFile" > "$file" || fail
-  rm "$temporaryVersionFile" || fail
+
+  while read line; do
+
+    [[ $line =~ $regex ]] || continue
+
+    local search=${BASH_REMATCH[0]}
+
+    local replace=$(echo $search | sed s/$versionRegex/$nextVersion/)
+
+    echo "Match: $search, Replace: $replace, exact: ${BASH_REMATCH[1]}"
+
+
+    echo "Replacing $search with $replace in $file"
+    sed  "s/$search/$replace/" "$file"
+    # echo sed  "s/$search/$replace/" "$file"
+    # exit;
+    # sed  "s/$search/$replace/" "$file" > "$temporaryVersionFile" || fail
+    # cat "$temporaryVersionFile" > "$file" || fail
+    # rm "$temporaryVersionFile" || fail
+
+    # thisFoundVersion="${BASH_REMATCH[1]}"
+
+    # if [ "$previousVersion" == "" ]; then
+    #   previousVersion="$thisFoundVersion";
+    # elif [ "$previousVersion" != "$thisFoundVersion" ]; then
+    #   echo
+    #   echo "Error!"
+    #   echo "Two different versions have been detected."
+    #   echo "The first version found was $previousVersion, and another version ($thisFoundVersion) was found in file: $f"
+    #   echo
+    #   exit 1
+    # fi
+
+    # foundVersionMatches[$foundVersionCount]="'$f': $line"
+    # foundVersionCount=$(( $foundVersionCount + 1 ));
+  done < $f
+
+
+
 
 }
 
@@ -177,7 +211,9 @@ do
     exit 1;
   fi
 
+  lineNumber=0
   while read line; do
+    lineNumber=$(( $lineNumber + 1 ))
 
     [[ $line =~ $regex ]] || continue
 
@@ -198,7 +234,8 @@ do
       exit 1
     fi
 
-    foundVersionMatches[$foundVersionCount]="'$f': $line"
+
+    foundVersionMatches[$foundVersionCount]=" \033[38;5;135m$f\033[39m   - - -   ${BASH_REMATCH[0]}   - - -   line \033[38;5;148m$lineNumber\033[39m"
     foundVersionCount=$(( $foundVersionCount + 1 ));
   done < $f
 
@@ -216,7 +253,7 @@ echo
 
 for (( i=0; i<$foundVersionCount; i++ ))
 do
-  echo ${foundVersionMatches[$i]}
+  echo -e ${foundVersionMatches[$i]}
 done
 echo
 
@@ -256,6 +293,7 @@ for (( i=0; i<$fileCount; i++ ))
 do
   f=${files[$i]}
   regex=${regexs[$i]}
+
   replaceVersion "$f" "$regex" "$nextVersion"
 done
 echo
@@ -271,9 +309,14 @@ read tagMessage
 git tag -a "$tagName" -m "$tagMessage" || fail
 echo
 
-for i in $files; do
-  replaceVersion "$i" "$nextVersion" "$nextDevVersion"
+for (( i=0; i<$fileCount; i++ ))
+do
+  f=${files[$i]}
+  regex=${regexs[$i]}
+
+  replaceVersion "$f" "$regex" "$nextDevVersion"
 done
+
 echo
 
 git commit -am "Upgrading version to $nextDevVersion" || fail
