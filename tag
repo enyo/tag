@@ -5,7 +5,7 @@ var
     fs = require('fs')
   , util = require('util')
   , spawn = require('child_process').spawn
-  , version = '1.1.1'
+  , version = '1.1.2'
   , configFileUri = './.tagconfig'
   , versionRegex = '[0-9]+\\.[0-9]+\\.[0-9]+(?:-dev)?'
   , previousVersion
@@ -216,7 +216,6 @@ try {
           spawnWithCallback('git', [ 'tag', '-a', tagName, '-m', text.replace(/\"/, '\\"') ], function() {
             replaceVersion(config.files, nextDevVersion);
             spawnWithCallback('git', [ 'commit', '-am', 'Upgrading version to ' + nextDevVersion ], function() {
-
               nl();
               console.log('Do you want to merge the tag %s to master? [ Y n ]', tagName);
               readFromStdIn(function(text) {
@@ -235,8 +234,8 @@ try {
                       readFromStdIn(function(text) {
                         nl();
                         if (text !== 'Y' && text !== '') return;
-                        spawnWithCallback('git', [ 'push', '--all' ], function() {
-                          spawnWithCallback('git', [ 'push', '--tags' ], function() {
+                        spawnWithCallback('git', [ 'push', '-v', '--all' ], function() {
+                          spawnWithCallback('git', [ 'push', '-v', '--tags' ], function() {
                             nl();
                           });
                         });
@@ -290,6 +289,7 @@ function spawnWithCallback(commandString, arguments, callback) {
   command = spawn(commandString, arguments);
 
   command.stdout.pipe(process.stdout, { end: false });
+  command.stderr.pipe(process.stderr, { end: false });
 
   command.on('exit', function(code) {
     if (code === null || code !== 0) {
