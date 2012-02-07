@@ -1,190 +1,251 @@
-#!/bin/bash
-
-version="0.0.9-dev"
-configFile=".tagconfig"
-
-echo "(Tag script version $version, config file: $configFile)"
-echo
+#!/usr/bin/env node
 
 
-if [ ! -f "$configFile" ]; then
-  echo "There is no $configFile file.";
-  echo
-  echo "To create one, enter the files, separated by space, in which the tag script should replace versions:"
-  read files
-  echo "files=\"$files\"" > "$configFile"
-  echo
-  echo "Config file created."
-  echo "Add $configFile to git and commit it. Then start this script again."
-  echo
-  exit
-fi
+var
+    fs = require('fs')
+  , util = require('util')
+  , exec = require('child_process').exec
+  , version = '1.0.0-dev'
+  , configFileUri = './.tagconfig'
+  , versionRegex = '[0-9]+\\.[0-9]+\\.[0-9]+(?:-dev)?'
+  , previousVersion
+  , nextVersion
+  , nextDevVersion
+  , tagName
+;
 
 
 
-# Read the config
-source $configFile
+console.log("\nTag script version %s, config file: %s, Usage:", version, configFileUri);
 
-for i in $files; do
-  if [ ! -f "$i" ]; then
-    echo "The version file '$i' does not exist";
-    echo
-    exit 1;
-  fi
-done;
+console.log(" tag [ nextVersion [ nextDevVersion ] ]\n");
+console.log(' # If `nextVersion` is not provided, the last digit will either be increased by one, or -dev removed.');
+console.log(' # If `nextDevVersion` is not provided, it will be nextVersion-dev.');
+
+nl();
+
+try {
+  
+  var configStats = fs.statSync(configFileUri);
+
+  if (!configStats.isFile()) {
+    console.log('- Must create config file.')
+  }
 
 
 
+  try {
+    var config = JSON.parse(fs.readFileSync(configFileUri, 'utf8'));
+    if (!config.files) throw new Error('Did not contain a files list.');
+  }
+  catch (e) {
+    throw new Error('Invalid config file (' + configFileUri + ')\nThe error: ' + e.message);
+  }
 
 
-versionFileUri=${files%% *}
+  /**
+   * Now go through the files, and add all additional information.
+   */
 
 
-printUsage() {
-  echo
-  echo Usage:
-  echo "  $0 [ versionName [ versionNameAfter ] ]"
-  echo
-  echo If versionNameAfter is not provided, it will be versionName-dev.
-  echo
-  exit 1
+   each(config.files, function(fileInfo) {
+     
+    fileInfo.content = fs.readFileSync(fileInfo.name, 'utf8');
+    fileInfo.regexInfos = [ ];
+
+    each(fileInfo.regexs, function(regex) {
+      var regexInfos = {
+        original: regex
+      };
+      regexInfos.complete = new RegExp('(' + regex.replace('###', ')(' + versionRegex + ')(') + ')', 'gm');
+      regexInfos.matches = fileInfo.content.match(regexInfos.complete);
+      if (!regexInfos.matches) throw new Error('No match found in file ' + fileInfo.name + ' with regex: ' + regex);
+      // if (regexInfos.matches.length > 1) {
+      //   console.log('---------------------------------------------------------------------------------------------');
+      //   console.log(' WARNING: Multiple matches found in "%s" with regex "%s"', fileInfo.name, regex);
+      //   console.log('---------------------------------------------------------------------------------------------');
+      // }
+
+      if (!previousVersion) {
+        previousVersion = extractVersion(regexInfos.matches[0]);
+      }
+      each(regexInfos.matches, function(match) {
+        if (extractVersion(match) !== previousVersion) throw new Error("Detected different version than '" + previousVersion + "' in file '" + fileInfo.name + "': " + match);
+      });
+      fileInfo.regexInfos.push(regexInfos);
+    });
+
+  });
+
+  nl();
+
+  console.log('Matches:');
+
+  each(config.files, function(fileInfo) {
+    each(fileInfo.regexInfos, function(regexInfo) {
+      console.log('\n%s (%s)', fileInfo.name, regexInfo.original);
+      each(regexInfo.matches, function(match) {
+        console.log(' - %s', match);
+      });
+    });
+  });
+
+  nl();
+  nl();
+
+
+  // if ()
+  if (process.argv[2]) nextVersion = process.argv[2];
+  if (process.argv[3]) nextDevVersion = process.argv[3];
+
+
+  if (!nextVersion) {
+    var devRegex = /\-dev$/;
+    if (devRegex.test(previousVersion)) {
+      nextVersion = previousVersion.replace(devRegex, '');
+    }
+    else {
+      nextVersion = increaseLastVersion(previousVersion);
+    }
+  }
+
+  if (!nextDevVersion) {
+    nextDevVersion = increaseLastVersion(nextVersion) + '-dev';
+  }
+
+  tagName = 'v' + nextVersion;
+
+  console.log('========================================');
+  console.log(' Current version:   %s', previousVersion);
+  console.log(' Next version:      %s', nextVersion);
+  console.log(' Next dev version:  %s', nextDevVersion);
+  console.log(' Tag name:          %s', tagName);
+  console.log('========================================');
+
+  nl();
+  console.log("Make sure you're on the right (develop) branch: ");
+
+  var child;
+
+// executes `pwd`
+  execWithCallback("git branch --no-color", function() {
+    nl();
+    console.log('Press enter to continue (Ctrl-c to abort)...');
+
+    readFromStdIn(function (text) {
+      if (text !== '\n') {
+        console.log('Aborting.');
+        process.exit();
+      }
+
+      // Let's go for it!
+      replaceVersion(config.files, nextVersion);
+
+      console.log('Commiting the change.');
+      execWithCallback('git commit -am "Upgrading version to ' + nextVersion + '"', function() {
+        nl();
+        console.log('Tagging the commit. Enter your message: ')
+        readFromStdIn(function (text) {
+          nl();
+          execWithCallback('git tag -a "' + tagName + '" -m "' + text.replace(/\"/, '\\"') + '"', function() {
+            replaceVersion(config.files, nextDevVersion);
+            execWithCallback('git commit -am "Upgrading version to ' + nextDevVersion + '"', function() {
+
+              nl();
+              console.log('Do you want to merge the tag %s to master? [ Y n ]', tagName);
+              readFromStdIn(function(text) {
+                nl();
+                if (text !== 'Y\n' && text !== '\n') return;
+
+                execWithCallback('git checkout master', function() {
+                  nl();
+                  console.log('Merging %s', tagName);
+                  execWithCallback('git merge --no-ff ' + tagName, function() {
+                    nl();
+                    execWithCallback('git checkout develop', function() {
+                      nl();
+                    });
+                  });
+                });
+              });
+
+            });
+          });
+        });
+
+      });
+
+    });
+
+  });
+}
+catch (e) {
+  console.log('\n\nFatal error:\n\n%s', e.message);
+  nl();
 }
 
-answer() {
-  local answer
-  echo -n "$1 (Y n) "
-  read answer
-
-  if [ "$answer" = '' ] || [ "$answer" = 'Y' ] || [ "$answer" = 'y' ]; then
-    return 0;
-  else
-    return 1;
-  fi
+function each(list, callback) {
+  for (var i = 0; i < list.length; i ++) {
+    callback(list[i], i);
+  }
 }
 
-parts=()
-
-splitVersion() {
-  parts=()
-  for i in $(echo -n $1 | tr . " "); do
-    parts+=($i)
-  done;
+function extractVersion(string) {
+  var matches = string.match(new RegExp(versionRegex));
+  if (!matches || matches.length < 1 || matches.length > 1) throw new Error("Could not extract version out of '" + string + "'");
+  return matches[0];
 }
 
-fail() {
-  echo "Command failed. Exiting."
-  echo
-  exit
+function increaseLastVersion(string) {
+  var splitVersion = string.split('.');
+  splitVersion[2] ++;
+  return splitVersion.join('.');
 }
 
-replaceVersion() {
-  local file="$1"
-  local search="$2"
-  local replace="$3"
-  local temporaryVersionFile="/tmp/version.$$"
-
-  echo "Replacing $2 with $3 in $1"
-  sed  "s/$search/$replace/" "$file" > "$temporaryVersionFile" || fail
-  cat "$temporaryVersionFile" > "$i" || fail
-  rm "$temporaryVersionFile" || fail
-
+function replaceVersion(files, version) {
+  each(files, function(fileInfo) {
+    var replacedContent = fileInfo.content;
+    each(fileInfo.regexInfos, function(regexInfo) {
+      replacedContent = replacedContent.replace(regexInfo.complete, '$1' + version + '$3');
+    });
+    fs.writeFileSync(fileInfo.name, replacedContent, 'utf8');
+  });
 }
 
 
+function execWithCallback(command, callback) {
+  command = exec(command, function (error, stdout, stderr) {
+    if (stdout) util.print(stdout);
+    if (stderr) util.print(stderr);
+    if (error !== null) {
+      console.error('Exec error: ', error);
+      process.exit();
+      return;
+    }
+  });
 
-versionRegex='[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\(-dev\)*'
+  command.on('exit', function(code) {
+    if (code === null) {
+      console.error('Exec error: ', error);
+      process.exit();
+      return;
+    }
+    callback();
+  });
+}
 
-matches=$(grep -c "$versionRegex" "$versionFileUri");
+function readFromStdIn(callback) {
+  process.stdin.resume();
+  process.stdin.setEncoding('utf8');
 
+  var eventListener = function(text) {
+    process.stdin.pause();
+    process.stdin.removeListener('data', eventListener);
+    callback(text);
+  };
 
-if [ $matches -eq 0 ]; then
-  echo "Error: There have been no matches of any version number."
-  echo
-  exit
-fi
-if [ $matches -gt 1 ]; then
-  echo "Multiple versions detected. The first match will be used."
-fi
-
-
-previousVersion=$(grep -o "$versionRegex" "$versionFileUri" | sed -n 1p)
-previousVersionNoDev=${previousVersion/-dev/}
-
-
-echo
-echo "Detected version $previousVersion in line(s): "
-for i in $files; do
-  echo
-  echo "$i: "
-  grep "$previousVersion" "$i"
-done
-echo
-
-
-
-wasDevVersion=1
-if [ "$previousVersion" = "$previousVersionNoDev" ]; then wasDevVersion=0; fi
-
-if [ "$wasDevVersion" -eq 1 ]; then
-  nextVersion=$previousVersionNoDev;
-else
-  splitVersion "$previousVersionNoDev"
-
-  nextVersion="${parts[0]}.${parts[1]}.$(( ${parts[2]} + 1 ))"
-fi
+  process.stdin.on('data', eventListener);
+}
 
 
-versionName=${1:-$nextVersion}
-
-splitVersion "$versionName"
-versionNameAfter=${2:-${parts[0]}.${parts[1]}.$(( ${parts[2]} + 1 ))-dev}
-
-tagName="v$versionName"
-
-echo "========================================";
-echo " Current version:    $previousVersion";
-echo " Next version:       $versionName";
-echo " Next dev version:   $versionNameAfter";
-echo " The version file:   $versionFileUri";
-echo "========================================";
-echo
-echo "Make sure you're on the right (develop) branch:"
-git branch
-echo
-echo -n "Hit enter to continue..."
-read
-echo
-for i in $files; do
-  replaceVersion "$i" "$previousVersion" "$versionName"
-done
-echo
-
-echo "Commiting the change"
-git commit -am "Upgrading version to $versionName" || fail
-echo
-
-echo -n "Tagging the commit. Enter your message: "
-read tagMessage
-git tag -a "$tagName" -m "$tagMessage" || fail
-echo
-
-for i in $files; do
-  replaceVersion "$i" "$versionName" "$versionNameAfter"
-done
-echo
-
-git commit -am "Upgrading version to $versionNameAfter" || fail
-echo
-
-if answer "Do you want to merge the tag $tagName to master?"; then
-  echo
-  echo "Checking out master"
-  git checkout master || fail
-  echo "Merging $tagName"
-  git merge --no-ff "$tagName" || fail
-  echo "Checking out develop again"
-  git checkout develop
-fi
-
-
-echo
+function nl() { console.log(); }
