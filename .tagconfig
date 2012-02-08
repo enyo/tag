@@ -1,5 +1,10 @@
 {
   "files": [
-    { "name": "tag", "regexs": [ "version\\s*=\\s*\\'###\\'" ] }
+    {
+      "name": "tag",
+      "regexs": [
+        "version = '###'"
+      ]
+    }
   ]
 }
