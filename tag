@@ -135,9 +135,6 @@ try {
       if (!previousVersion) {
         previousVersion = extractVersion(regexInfos.matches[0]);
       }
-      each(regexInfos.matches, function(match) {
-        if (extractVersion(match) !== previousVersion) throw new Error("Detected different version than '" + previousVersion + "' in file '" + fileInfo.name + "': " + match);
-      });
       fileInfo.regexInfos.push(regexInfos);
     });
 
@@ -147,14 +144,29 @@ try {
 
   console.log(color('Matches:', 'underline'));
 
+  var error;
   each(config.files, function(fileInfo) {
     each(fileInfo.regexInfos, function(regexInfo) {
       console.log('\nFile: %s (Regular expression: %s)', color(fileInfo.name, 'green'), color(regexInfo.original, 'green'));
-      each(regexInfo.matches, function(match) {
-        console.log(' - %s', match);
+      each(regexInfo.matches, function(match, i) {
+        var rightVersion = extractVersion(match) === previousVersion;
+        var matchDisplay;
+        if (rightVersion && i === 0) {
+          matchDisplay = match;
+        }
+        else if (!rightVersion) {
+          error = "Detected different version than '" + previousVersion + "' in file '" + fileInfo.name + "': " + match;
+          matchDisplay = color(match, 'red_bg') + color(' (Error: wrong version)', 'red');
+        }
+        else {
+          matchDisplay = color(match, 'red') + ' (Warning: multiple matches)';
+        }
+        console.log(' - %s', matchDisplay);
       });
     });
   });
+
+  if (error) throw new Error(error);
 
   nl();
   nl();
