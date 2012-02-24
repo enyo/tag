@@ -5,7 +5,7 @@ var
     fs = require('fs')
   , util = require('util')
   , spawn = require('child_process').spawn
-  , version = '1.1.4'
+  , version = '1.1.5'
   , configFileUri = './.tagconfig'
   , versionRegex = '[0-9]+\\.[0-9]+\\.[0-9]+(?:-dev)?'
   , previousVersion
@@ -16,7 +16,7 @@ var
 
 
 
-console.log("Usage (v%s): tag [nextVersion [nextDevVersion]]", version);
+console.log("Usage (v%s): tag [nextVersion [nextDevVersion]] [--replace-only]", version);
 
 nl();
 
@@ -172,9 +172,18 @@ try {
   nl();
 
 
-  // if ()
-  if (process.argv[2]) nextVersion = process.argv[2];
-  if (process.argv[3]) nextDevVersion = process.argv[3];
+
+  var replaceOnly = false;
+  var argCount = 0;
+  for (var i = 2; i < process.argv.length; i ++) {
+    var thisArg = process.argv[i];
+    if (thisArg === '--replace-only') replaceOnly = true;
+    else {
+      if (argCount === 0) nextVersion = thisArg;
+      else if (argCount === 1) nextDevVersion = thisArg;
+      argCount ++;
+    }
+  }
 
 
   if (!nextVersion) {
@@ -196,8 +205,8 @@ try {
   console.log('========================================');
   console.log(' Current version:    %s', color(previousVersion, 'red+bold'));
   console.log(' Next version:       %s', color(nextVersion, 'green'));
-  console.log(' Tag name:          %s', color(tagName, 'green'));
-  console.log(' Next dev version:   %s', color(nextDevVersion, 'blue'));
+  if (!replaceOnly) console.log(' Tag name:          %s', color(tagName, 'green'));
+  if (!replaceOnly) console.log(' Next dev version:   %s', color(nextDevVersion, 'blue'));
   console.log('========================================');
 
   nl();
@@ -219,36 +228,42 @@ try {
       // Let's go for it!
       replaceVersion(config.files, nextVersion);
 
-      console.log('Commiting the change.');
-      spawnWithCallback('git', [ 'commit', '-am', 'Upgrading version to ' + nextVersion ], function() {
+      if (replaceOnly) {
+        console.log('Replacing only, so stopping here.');
         nl();
-        console.log('Tagging the commit. Enter your message: ')
-        readFromStdIn(function (text) {
+      }
+      else {
+        console.log('Commiting the change.');
+        spawnWithCallback('git', [ 'commit', '-am', 'Upgrading version to ' + nextVersion ], function() {
           nl();
-          spawnWithCallback('git', [ 'tag', '-a', tagName, '-m', text.replace(/\"/, '\\"') ], function() {
-            replaceVersion(config.files, nextDevVersion);
-            spawnWithCallback('git', [ 'commit', '-am', 'Upgrading version to ' + nextDevVersion ], function() {
-              nl();
-              console.log('Do you want to merge the tag %s to master? [ Y n ]', tagName);
-              readFromStdIn(function(text) {
+          console.log('Tagging the commit. Enter your message: ')
+          readFromStdIn(function (text) {
+            nl();
+            spawnWithCallback('git', [ 'tag', '-a', tagName, '-m', text.replace(/\"/, '\\"') ], function() {
+              replaceVersion(config.files, nextDevVersion);
+              spawnWithCallback('git', [ 'commit', '-am', 'Upgrading version to ' + nextDevVersion ], function() {
                 nl();
-                if (text !== 'Y' && text !== '') return;
-                console.log('Checking out master');
-                spawnWithCallback('git', [ 'checkout', 'master' ], function() {
+                console.log('Do you want to merge the tag %s to master? [ Y n ]', tagName);
+                readFromStdIn(function(text) {
                   nl();
-                  console.log('Merging %s', tagName);
-                  spawnWithCallback('git', [ 'merge', '--no-ff', tagName ], function() {
+                  if (text !== 'Y' && text !== '') return;
+                  console.log('Checking out master');
+                  spawnWithCallback('git', [ 'checkout', 'master' ], function() {
                     nl();
-                    console.log('Checking out develop again');
-                    spawnWithCallback('git', [ 'checkout', 'develop' ], function() {
+                    console.log('Merging %s', tagName);
+                    spawnWithCallback('git', [ 'merge', '--no-ff', tagName ], function() {
                       nl();
-                      console.log('Do you want to push --all and push --tags? [ Y n ]');
-                      readFromStdIn(function(text) {
+                      console.log('Checking out develop again');
+                      spawnWithCallback('git', [ 'checkout', 'develop' ], function() {
                         nl();
-                        if (text !== 'Y' && text !== '') return;
-                        spawnWithCallback('git', [ 'push', '-v', '--all' ], function() {
-                          spawnWithCallback('git', [ 'push', '-v', '--tags' ], function() {
-                            nl();
+                        console.log('Do you want to push --all and push --tags? [ Y n ]');
+                        readFromStdIn(function(text) {
+                          nl();
+                          if (text !== 'Y' && text !== '') return;
+                          spawnWithCallback('git', [ 'push', '-v', '--all' ], function() {
+                            spawnWithCallback('git', [ 'push', '-v', '--tags' ], function() {
+                              nl();
+                            });
                           });
                         });
                       });
@@ -259,7 +274,7 @@ try {
             });
           });
         });
-      });
+      }
     });
   });
 }
