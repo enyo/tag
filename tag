@@ -5,8 +5,10 @@ var
     fs = require('fs')
   , util = require('util')
   , spawn = require('child_process').spawn
-  , version = '1.1.5'
-  , configFileUri = './.tagconfig'
+  , version = '1.1.6'
+  // The first one will be used as default if no config is available.
+  , possibleConfigFileUris = [ './.tagconfig.json', './.tagconfig', './tagconfig.json', './tagconfig' ]
+  , configFileUri
   , versionRegex = '[0-9]+\\.[0-9]+\\.[0-9]+(?:-dev)?'
   , previousVersion
   , nextVersion
@@ -23,9 +25,9 @@ nl();
 
 
 function createConfig() {
-  console.log("There is no %s file.", configFileUri);
+  console.log("Neither of those possible config files exists: %s", possibleConfigFileUris.join(', '));
   nl();
-  console.log("To create one, please specify all files that should be parsed.");
+  console.log("To create %s, please specify all files that should be parsed.", configFileUri);
   nl();
 
 
@@ -83,15 +85,23 @@ function createConfig() {
 
 
 
-try {
-  var configStats = fs.statSync(configFileUri);
-  if (!configStats.isFile()) throw 'error';
+var i = 0;
+while(i < possibleConfigFileUris.length && !configFileUri) {
+  try {
+    var configStats = fs.statSync(possibleConfigFileUris[i]);
+    if (configStats.isFile()) {
+      configFileUri = possibleConfigFileUris[i];
+    }
+  }
+  catch (e) { }
+  i ++;
 }
-catch (e) {
+
+if (!configFileUri) {
+  configFileUri = possibleConfigFileUris[0];
   createConfig();
   return;
 }
-
 
 try {
   console.log("Using config file %s\n", configFileUri);
