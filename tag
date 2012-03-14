@@ -5,7 +5,7 @@ var
     fs = require('fs')
   , util = require('util')
   , spawn = require('child_process').spawn
-  , version = '1.1.6'
+  , version = '1.1.7-dev'
   // The first one will be used as default if no config is available.
   , possibleConfigFileUris = [ './.tagconfig.json', './.tagconfig', './tagconfig.json', './tagconfig' ]
   , configFileUri
