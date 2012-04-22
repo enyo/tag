@@ -18,7 +18,7 @@ var
 
 
 
-console.log("Usage (v%s): tag [nextVersion [nextDevVersion]] [--replace-only]", version);
+console.log("Usage (v%s): tag [nextVersion [nextDevVersion]] [--rename-only]", version);
 
 nl();
 
@@ -183,11 +183,11 @@ try {
 
 
 
-  var replaceOnly = false;
+  var renameOnly = false;
   var argCount = 0;
   for (var i = 2; i < process.argv.length; i ++) {
     var thisArg = process.argv[i];
-    if (thisArg === '--replace-only') replaceOnly = true;
+    if (thisArg === '--rename-only') renameOnly = true;
     else {
       if (argCount === 0) nextVersion = thisArg;
       else if (argCount === 1) nextDevVersion = thisArg;
@@ -215,9 +215,16 @@ try {
   console.log('========================================');
   console.log(' Current version:    %s', color(previousVersion, 'red+bold'));
   console.log(' Next version:       %s', color(nextVersion, 'green'));
-  if (!replaceOnly) console.log(' Tag name:          %s', color(tagName, 'green'));
-  if (!replaceOnly) console.log(' Next dev version:   %s', color(nextDevVersion, 'blue'));
+  if (!renameOnly) {
+    console.log(' Tag name:          %s', color(tagName, 'green'));
+    console.log(' Next dev version:   %s', color(nextDevVersion, 'blue'));
+  }
   console.log('========================================');
+
+  if (renameOnly) {
+    nl();
+    console.log(color("(Only renaming)", "bold+blue"));
+  }
 
   nl();
   console.log("Make sure you're on the right (develop) branch: ");
@@ -238,7 +245,7 @@ try {
       // Let's go for it!
       replaceVersion(config.files, nextVersion);
 
-      if (replaceOnly) {
+      if (renameOnly) {
         console.log('Replacing only, so stopping here.');
         nl();
       }

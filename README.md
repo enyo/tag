@@ -40,6 +40,15 @@ As soon as the config is created, add the `.tagconfig` to your repository and co
 
 The next time you start the script you will see the detected version, and the proposed next versions.
 
+## Renaming only
+
+Sometimes you only want to rename your version without actually tagging the whole thing. (This happens when you're
+working on the version 1.4.3-dev and realize that the next version will actually be 2.0.0. So you should be working
+on 2.0.0-dev).
+To do so, call `tag` with the `--rename-only` option:
+
+    tag 2.0.0-dev --rename-only
+
 ### Manual versioning
 
 When you **don't** want to upgrade version `1.2.3-dev` to `1.2.3`, or version `1.2.3` to `1.2.4`, you can specify the next version manually like this:
@@ -56,7 +65,7 @@ After commiting this version, the script automatically increases the version, an
 
 When calling `tag`, a typical output looks like this:
 
-    Usage (v1.1.3-dev): tag [nextVersion [nextDevVersion]]
+    Usage (v1.1.3-dev): tag [nextVersion [nextDevVersion]] --rename-only
 
     Using config file ./.tagconfig
 
