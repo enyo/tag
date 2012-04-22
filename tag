@@ -5,8 +5,10 @@ var
     fs = require('fs')
   , util = require('util')
   , spawn = require('child_process').spawn
-  , version = '1.1.3'
-  , configFileUri = './.tagconfig'
+  , version = '1.1.7'
+  // The first one will be used as default if no config is available.
+  , possibleConfigFileUris = [ './.tagconfig.json', './.tagconfig', './tagconfig.json', './tagconfig' ]
+  , configFileUri
   , versionRegex = '[0-9]+\\.[0-9]+\\.[0-9]+(?:-dev)?'
   , previousVersion
   , nextVersion
@@ -16,16 +18,16 @@ var
 
 
 
-console.log("Usage (v%s): tag [nextVersion [nextDevVersion]]", version);
+console.log("Usage (v%s): tag [nextVersion [nextDevVersion]] [--rename-only]", version);
 
 nl();
 
 
 
 function createConfig() {
-  console.log("There is no %s file.", configFileUri);
+  console.log("Neither of those possible config files exists: %s", possibleConfigFileUris.join(', '));
   nl();
-  console.log("To create one, please specify all files that should be parsed.");
+  console.log("To create %s, please specify all files that should be parsed.", configFileUri);
   nl();
 
 
@@ -83,15 +85,23 @@ function createConfig() {
 
 
 
-try {
-  var configStats = fs.statSync(configFileUri);
-  if (!configStats.isFile()) throw 'error';
+var i = 0;
+while(i < possibleConfigFileUris.length && !configFileUri) {
+  try {
+    var configStats = fs.statSync(possibleConfigFileUris[i]);
+    if (configStats.isFile()) {
+      configFileUri = possibleConfigFileUris[i];
+    }
+  }
+  catch (e) { }
+  i ++;
 }
-catch (e) {
+
+if (!configFileUri) {
+  configFileUri = possibleConfigFileUris[0];
   createConfig();
   return;
 }
-
 
 try {
   console.log("Using config file %s\n", configFileUri);
@@ -135,9 +145,6 @@ try {
       if (!previousVersion) {
         previousVersion = extractVersion(regexInfos.matches[0]);
       }
-      each(regexInfos.matches, function(match) {
-        if (extractVersion(match) !== previousVersion) throw new Error("Detected different version than '" + previousVersion + "' in file '" + fileInfo.name + "': " + match);
-      });
       fileInfo.regexInfos.push(regexInfos);
     });
 
@@ -147,22 +154,46 @@ try {
 
   console.log(color('Matches:', 'underline'));
 
+  var error;
   each(config.files, function(fileInfo) {
     each(fileInfo.regexInfos, function(regexInfo) {
       console.log('\nFile: %s (Regular expression: %s)', color(fileInfo.name, 'green'), color(regexInfo.original, 'green'));
-      each(regexInfo.matches, function(match) {
-        console.log(' - %s', match);
+      each(regexInfo.matches, function(match, i) {
+        var rightVersion = extractVersion(match) === previousVersion;
+        var matchDisplay;
+        if (rightVersion && i === 0) {
+          matchDisplay = match;
+        }
+        else if (!rightVersion) {
+          error = "Detected different version than '" + previousVersion + "' in file '" + fileInfo.name + "': " + match;
+          matchDisplay = color(match, 'red_bg') + color(' (Error: wrong version)', 'red');
+        }
+        else {
+          matchDisplay = color(match, 'red') + ' (Warning: multiple matches)';
+        }
+        console.log(' - %s', matchDisplay);
       });
     });
   });
 
+  if (error) throw new Error(error);
+
   nl();
   nl();
 
 
-  // if ()
-  if (process.argv[2]) nextVersion = process.argv[2];
-  if (process.argv[3]) nextDevVersion = process.argv[3];
+
+  var renameOnly = false;
+  var argCount = 0;
+  for (var i = 2; i < process.argv.length; i ++) {
+    var thisArg = process.argv[i];
+    if (thisArg === '--rename-only') renameOnly = true;
+    else {
+      if (argCount === 0) nextVersion = thisArg;
+      else if (argCount === 1) nextDevVersion = thisArg;
+      argCount ++;
+    }
+  }
 
 
   if (!nextVersion) {
@@ -184,9 +215,16 @@ try {
   console.log('========================================');
   console.log(' Current version:    %s', color(previousVersion, 'red+bold'));
   console.log(' Next version:       %s', color(nextVersion, 'green'));
-  console.log(' Tag name:          %s', color(tagName, 'green'));
-  console.log(' Next dev version:   %s', color(nextDevVersion, 'blue'));
+  if (!renameOnly) {
+    console.log(' Tag name:          %s', color(tagName, 'green'));
+    console.log(' Next dev version:   %s', color(nextDevVersion, 'blue'));
+  }
   console.log('========================================');
+
+  if (renameOnly) {
+    nl();
+    console.log(color("(Only renaming)", "bold+blue"));
+  }
 
   nl();
   console.log("Make sure you're on the right (develop) branch: ");
@@ -207,36 +245,42 @@ try {
       // Let's go for it!
       replaceVersion(config.files, nextVersion);
 
-      console.log('Commiting the change.');
-      spawnWithCallback('git', [ 'commit', '-am', 'Upgrading version to ' + nextVersion ], function() {
+      if (renameOnly) {
+        console.log('Replacing only, so stopping here.');
         nl();
-        console.log('Tagging the commit. Enter your message: ')
-        readFromStdIn(function (text) {
+      }
+      else {
+        console.log('Commiting the change.');
+        spawnWithCallback('git', [ 'commit', '-am', 'Upgrading version to ' + nextVersion ], function() {
           nl();
-          spawnWithCallback('git', [ 'tag', '-a', tagName, '-m', text.replace(/\"/, '\\"') ], function() {
-            replaceVersion(config.files, nextDevVersion);
-            spawnWithCallback('git', [ 'commit', '-am', 'Upgrading version to ' + nextDevVersion ], function() {
-              nl();
-              console.log('Do you want to merge the tag %s to master? [ Y n ]', tagName);
-              readFromStdIn(function(text) {
+          console.log('Tagging the commit. Enter your message: ')
+          readFromStdIn(function (text) {
+            nl();
+            spawnWithCallback('git', [ 'tag', '-a', tagName, '-m', text.replace(/\"/, '\\"') ], function() {
+              replaceVersion(config.files, nextDevVersion);
+              spawnWithCallback('git', [ 'commit', '-am', 'Upgrading version to ' + nextDevVersion ], function() {
                 nl();
-                if (text !== 'Y' && text !== '') return;
-                console.log('Checking out master');
-                spawnWithCallback('git', [ 'checkout', 'master' ], function() {
+                console.log('Do you want to merge the tag %s to master? [ Y n ]', tagName);
+                readFromStdIn(function(text) {
                   nl();
-                  console.log('Merging %s', tagName);
-                  spawnWithCallback('git', [ 'merge', '--no-ff', tagName ], function() {
+                  if (text !== 'Y' && text !== '') return;
+                  console.log('Checking out master');
+                  spawnWithCallback('git', [ 'checkout', 'master' ], function() {
                     nl();
-                    console.log('Checking out develop again');
-                    spawnWithCallback('git', [ 'checkout', 'develop' ], function() {
+                    console.log('Merging %s', tagName);
+                    spawnWithCallback('git', [ 'merge', '--no-ff', tagName ], function() {
                       nl();
-                      console.log('Do you want to push --all and push --tags? [ Y n ]');
-                      readFromStdIn(function(text) {
+                      console.log('Checking out develop again');
+                      spawnWithCallback('git', [ 'checkout', 'develop' ], function() {
                         nl();
-                        if (text !== 'Y' && text !== '') return;
-                        spawnWithCallback('git', [ 'push', '-v', '--all' ], function() {
-                          spawnWithCallback('git', [ 'push', '-v', '--tags' ], function() {
-                            nl();
+                        console.log('Do you want to push --all and push --tags? [ Y n ]');
+                        readFromStdIn(function(text) {
+                          nl();
+                          if (text !== 'Y' && text !== '') return;
+                          spawnWithCallback('git', [ 'push', '-v', '--all' ], function() {
+                            spawnWithCallback('git', [ 'push', '-v', '--tags' ], function() {
+                              nl();
+                            });
                           });
                         });
                       });
@@ -247,7 +291,7 @@ try {
             });
           });
         });
-      });
+      }
     });
   });
 }
