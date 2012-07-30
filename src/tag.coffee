@@ -1,12 +1,5 @@
 
-versionRegex = "[0-9]+\\.[0-9]+\\.[0-9]+(?:-dev)?"
-
-
-utils = require "./utils"
-
 program = require "commander"
-
-
 
 program
   .version("1.1.9-dev")
@@ -14,6 +7,25 @@ program
   .option("-d, --dev <version>", "the next dev version")
   .option("-r, --rename", "rename only")
   .parse(process.argv)
+
+
+
+unless program.args.length == 1
+  console.log program.helpInformation()
+  process.exit()
+
+
+
+config = require "./config"
+
+
+
+
+
+versionRegex = "[0-9]+\\.[0-9]+\\.[0-9]+(?:-dev)?"
+
+
+
 
 
 console.log "dev", program.dev
