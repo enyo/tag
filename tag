@@ -100,7 +100,7 @@ while(i < possibleConfigFileUris.length && !configFileUri) {
 if (!configFileUri) {
   configFileUri = possibleConfigFileUris[0];
   createConfig();
-  return;
+  process.exit(1);
 }
 
 try {
