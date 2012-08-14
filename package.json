@@ -3,6 +3,7 @@
   "description": "Replaces all occurences of tags, and tags the project with git.",
   "version": "2.0.1-dev",
   "author": "Matias Meno <m@tias.me>",
+  "keywords": [ "version", "versioning", "tag", "semantic", "semantic versioning" ]
   "dependencies": {
     "commander": "1.x",
     "coffee-script": "1.x",
