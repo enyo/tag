@@ -13,7 +13,7 @@
   },
   "main": "index",
   "engines": { "node": "0.x" },
-  "bin": { "tag": "lib/tag" },
+  "bin": { "tag": "bin/tag.js" },
   "repository": {
     "type": "git",
     "url": "git://github.com/enyo/tag.git"
