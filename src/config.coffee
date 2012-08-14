@@ -126,7 +126,11 @@ class Config
 
     throw new Error "The regular expression did contain #{match?.length || 0} occurences of ###." if !match or match.length != 1
 
-    @config.files.push { name: filename, regexs: [ escapeRegexString(regex) ] }
+    existingFiles = @config.files.filter (file) -> file.name == filename
+    if existingFiles
+      existingFiles[0].regexs.push escapeRegexString(regex)
+    else
+      @config.files.push { name: filename, regexs: [ escapeRegexString(regex) ] }
 
 
 
