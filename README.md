@@ -1,4 +1,4 @@
-# Tag Version 2.0.1-dev
+# Tag Version 2.0.1
 
 A simple script based on node.js (without dependencies) to help correctly upgrade versions and tag them with git.
 
