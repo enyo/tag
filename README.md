@@ -73,36 +73,7 @@ After commiting this version, the script automatically increases the version, an
 
 When calling `tag`, a typical output looks like this:
 
-    Using config file .tagconfig.json:
-
-    ┏━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
-    ┃ Filename ┃ Version(s) ┃ Matched             ┃ Regex(s)     ┃
-    ┣━━━━━━━━━━╋━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━┫
-    ┃ test.js  ┃ 1.2.37-dev ┃ v: 1.2.37-dev       ┃ v: ###       ┃
-    ┣━━━━━━━━━━╋━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━┫
-    ┃          ┃ 1.2.37-dev ┃ version: 1.2.37-dev ┃ version: ### ┃
-    ┗━━━━━━━━━━┻━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━┛
-
-
-    ===================================
-
-    Previous version: 1.2.37-dev
-    Tag version:      1.2.37
-    Next dev version: 1.2.38-dev
-
-    ===================================
-
-    Enter your tag message: My tag message
-
-    I'm going to:
-     - create tag 1.2.37 with message: My tag message
-     - change the version to 1.2.38-dev
-     - merge the tag 1.2.37 to master
-     - push --all and --tags
-
-    Do you want to continue?
-
-
+![Output](http://i.imgur.com/CUQjF.png)
 
 
 ## License
