@@ -73,7 +73,7 @@ function createConfig() {
     nl();
     console.log('Writing config to %s...', configFileUri);
     fs.writeFileSync(configFileUri, JSON.stringify(config, null, 2), 'utf8');
-    console.log('Successfully created the config.')
+    console.log('Successfully created the config.');
     console.log('Add %s to git and commit it. Then start this script again.', configFileUri);
     nl();
     nl();
@@ -100,7 +100,7 @@ while(i < possibleConfigFileUris.length && !configFileUri) {
 if (!configFileUri) {
   configFileUri = possibleConfigFileUris[0];
   createConfig();
-  return;
+  process.exit(1);
 }
 
 try {

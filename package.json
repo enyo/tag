@@ -1,0 +1,23 @@
+{
+  "name": "versiontag",
+  "description": "Replaces all occurences of tags, and tags the project with git.",
+  "version": "1.1.9-dev",
+  "author": "Matias Meno <m@tias.me>",
+  "dependencies": {
+    "commander": "1.x",
+    "coffee-script": "1.x",
+    "q": "0.x",
+    "gift": "0.x",
+    "colors": "0.x",
+    "cli-table": "0.x"
+  },
+  "main": "index",
+  "engines": { "node": "0.x" },
+  "bin": { "tag": "bin/tag.js" },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/enyo/tag.git"
+  },
+  "homepage": "https://github.com/enyo/tag"
+
+}
