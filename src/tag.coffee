@@ -30,6 +30,7 @@ program
   .option("-a, --add", "add a file to the tagconfig")
   .option("--nomerge", "do not merge the tag to master")
   .option("--nopush", "do not push --all and --tags after tagging")
+  .option("--nopull", "do not pull origin/master before mergin the tag to master")
   .parse(process.argv)
 
 
@@ -213,11 +214,15 @@ Q.fcall(->
         console.log "Merging tag #{tagVersion} to master.".blue
         utils.command("git", "checkout", "master")
         .then ->
-          console.log()
-          utils.command("git", "merge", "--no-ff", tagVersion)
+          unless program.nopull
+            console.log()
+            utils.command "git", "pull", "origin", "master" 
         .then ->
           console.log()
-          utils.command("git", "checkout", branch)
+          utils.command "git", "merge", "--no-ff", tagVersion
+        .then ->
+          console.log()
+          utils.command "git", "checkout", branch
     .then ->
       unless program.nopush
         separate "-"
