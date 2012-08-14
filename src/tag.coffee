@@ -158,6 +158,10 @@ Q.fcall(->
 
       separate "=", 35
     .then ->
+      unless repoClean
+        console.log("Warning: ".red.bold + "The repository is not clean. You should commit or stash all your changes.".red)
+        console.log()
+
       unless program.rename
         # Means there will be a tag so lets make sure there's a tag message
         if program.message
@@ -180,9 +184,6 @@ Q.fcall(->
         console.log " - push --all and --tags" unless program.nopush
 
       console.log "(Beware that you are on the branch " + "#{branch}".red.bold + "!)" if branch isnt "develop"
-      unless repoClean
-        console.log()
-        console.log("Warning: ".red.bold + "The repository is not clean. You should commit or stash all your changes.".red)
 
       console.log()
       utils.confirm "Do you want to continue? "

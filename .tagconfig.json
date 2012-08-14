@@ -1,9 +1,21 @@
 {
   "files": [
     {
-      "name": "tag",
+      "name": "package.json",
       "regexs": [
-        "version = '###'"
+        "\"version\": \"###\""
+      ]
+    },
+    {
+      "name": "src/tag.coffee",
+      "regexs": [
+        "version\\(\"###\"\\)"
+      ]
+    },
+    {
+      "name": "README.md",
+      "regexs": [
+        "Version ###"
       ]
     }
   ]
