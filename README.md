@@ -53,13 +53,13 @@ The next time you start the script you will see the detected version, and the pr
 
 Sometimes you only want to rename your version without actually tagging the whole thing.
 
-To do so, call `tag` with the `--rename` option:
+To do so, call `tag` with the `r` (`--rename`) option:
 
-    tag --rename
+    tag -r
 
 ### Manual versioning
 
-When you **don't** want to upgrade version `1.2.3-dev` to `1.2.3`, or version `1.2.3` to `1.2.4`, you can specify the next version manually like this:
+When you **don't** want to upgrade version `1.2.3-dev` to `1.2.3`, or version `1.2.3` to `1.2.4`, you can specify the next version manually with the `-t` (`--tag`) option:
 
     tag -t 2.0.0
 
