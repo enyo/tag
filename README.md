@@ -1,4 +1,4 @@
-# TAG
+# Tag Version 2.0.0
 
 A simple script based on node.js (without dependencies) to help correctly upgrade versions and tag them with git.
 
@@ -14,12 +14,21 @@ The ideas are:
 This helps me achieve [semantic versioning](http://semver.org/), and implementend the [successful branching model](http://nvie.com/posts/a-successful-git-branching-model/).
 
 
+## Installation
+
+    npm install -g versiontag
 
 ## Usage
 
-After installing nodejs simply type `/path/to/tag` in your console when in a git repository.
+Use the help to view a list of available commands:
 
-The first time the script is called it will aid you in creating a `.tagconfig` which looks approximately like this:
+    tag -h
+
+
+The first time you run `tag` you probably want to add new files `tag` should replace the versions in.
+Do this by running `tag --add`
+
+The generated `.tagconfig.json` file looks approximately like this:
 
     {
       "files": [
@@ -36,28 +45,27 @@ You can add regular expressions to `regexs` so multiple versions can be found, a
 
 **WARNING**: When you use a selfmade regular expression, make sure you use groups that don't capture, like this: (?:stuff)
 
-As soon as the config is created, add the `.tagconfig` to your repository and commit it (this way you have a clean commit).
+As soon as the config is created, add the `.tagconfig.json` to your repository and commit it (this way you have a clean commit).
 
 The next time you start the script you will see the detected version, and the proposed next versions.
 
 ## Renaming only
 
-Sometimes you only want to rename your version without actually tagging the whole thing. (This happens when you're
-working on the version 1.4.3-dev and realize that the next version will actually be 2.0.0. So you should be working
-on 2.0.0-dev).
-To do so, call `tag` with the `--rename-only` option:
+Sometimes you only want to rename your version without actually tagging the whole thing.
 
-    tag 2.0.0-dev --rename-only
+To do so, call `tag` with the `r` (`--rename`) option:
+
+    tag -r
 
 ### Manual versioning
 
-When you **don't** want to upgrade version `1.2.3-dev` to `1.2.3`, or version `1.2.3` to `1.2.4`, you can specify the next version manually like this:
+When you **don't** want to upgrade version `1.2.3-dev` to `1.2.3`, or version `1.2.3` to `1.2.4`, you can specify the next version manually with the `-t` (`--tag`) option:
 
-    /path/to/tag 2.0.0
+    tag -t 2.0.0
 
-After commiting this version, the script automatically increases the version, and appends `-dev`. If you also want to control this, simply add it as a second parameter:
+After commiting this version, the script automatically increases the version, and appends `-dev`. If you also want to control this, you can also use the `-d` (`--dev`) option:
 
-    /path/to/tag 2.0.0 3.0.0-dev
+    tag -t 2.0.0 -d 3.0.0-dev
 
 (I strongly recommend it being a `-dev` version)
 
@@ -65,43 +73,7 @@ After commiting this version, the script automatically increases the version, an
 
 When calling `tag`, a typical output looks like this:
 
-    Usage (v1.1.3-dev): tag [nextVersion [nextDevVersion]] --rename-only
-
-    Using config file ./.tagconfig
-
-
-    Matches:
-
-    File: tag (Regular expression: version = '###')
-     - version = '1.1.3-dev'
-
-
-    ========================================
-     Current version:    1.1.3-dev
-     Next version:       1.1.3
-     Tag name:          v1.1.3
-     Next dev version:   1.1.4-dev
-    ========================================
-
-    Make sure you're on the right (develop) branch: 
-    * develop
-      master
-
-    Press enter to continue (Ctrl-c to abort)...
-
-
-## Step By Step
-
-This is what the script actually does:
-
-1. Changes the version in all configured files to the next version.
-2. Commits the change with a commit message like "Upgrading to version 2.1.4".
-3. Tags the commit. (Asks you to specify a tag message).
-4. Changes the version to the next development version. (The default is the increased next version with `-dev` at the end).
-5. Commits the change with a commit message like "Upgrading to version 2.1.5-dev".
-6. Optionally merges the tag to master. (Checks out master, merges the develop branch with --no-ff, checks out develop again)
-7. Optionally does `git push --all && git push --tags`
-
+![Output](http://i.imgur.com/CUQjF.png)
 
 
 ## License
