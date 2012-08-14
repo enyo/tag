@@ -31,7 +31,7 @@ class Config
   constructor: (@dir) ->
     @load()
     if @file?
-      console.log "Using config file ".grey + "#{@file}".bold + ":"
+      console.log "Using config file ".grey + "#{@file}" + ":"
       console.log()
 
   getFileUri: (filename) ->
@@ -124,9 +124,9 @@ class Config
   add: (filename, regex) ->
     match = regex.match /###/g
 
-    throw new Error "The regular expression did contain #{matchCount} occurences of ###." if !match or match.length != 1
+    throw new Error "The regular expression did contain #{match?.length || 0} occurences of ###." if !match or match.length != 1
 
-    @config.files.push { name: filename, regexs: escapeRegexString(regex or "###") }
+    @config.files.push { name: filename, regexs: [ escapeRegexString(regex) ] }
 
 
 

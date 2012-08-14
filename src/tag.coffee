@@ -10,7 +10,13 @@ repo = git process.cwd()
 Table = require "cli-table"
 
 
-
+separate = (char = "=", length = 79) ->
+  string = []
+  for i in [1..length]
+    string.push char
+  console.log()
+  console.log string.join ""
+  console.log()
 
 
 
@@ -65,7 +71,7 @@ Q.fcall(->
       filename = name
       utils.prompt "Please enter the expression to look for [ ### ]: "
     .then (regx) ->
-      regex = regx
+      regex = regx || "###"
       config.add filename, regex
       config.save()
     .then ->
@@ -87,7 +93,8 @@ Q.fcall(->
     tagMessage = null
 
     Q.fcall(->
-      throw new Error "No valid tagconfig file. Please see 'tag -h' on how to create one." unless config.config?
+      unless config.config?
+        throw new Error "No valid tagconfig file. Please see 'tag -h' on how to create one." 
     )
     .then ->
       Q.ncall repo.status, repo
@@ -117,7 +124,7 @@ Q.fcall(->
             versionConflict = versionConflict || thisVersionConflict
             table.push [
               if first then info.file.name.bold else ""
-              if not thisVersionConflict then matches.version.green.bold else matches.version.red.bold
+              if not thisVersionConflict then matches.version.green else matches.version.red.bold
               matches.match
               regexInfo.originalRegex
             ]
@@ -141,7 +148,7 @@ Q.fcall(->
         nextDevVersion = config.increaseVersion(tagVersion) + "-dev"
 
     .then ->
-      console.log "================================"
+      separate "=", 35
       console.log   "Previous version: " + previousVersion
       if program.rename
         console.log "Next version:     " + tagVersion.green
@@ -149,8 +156,7 @@ Q.fcall(->
         console.log "Tag version:      " + tagVersion.green
         console.log "Next dev version: " + nextDevVersion.blue
 
-      console.log "================================"
-      console.log()
+      separate "=", 35
     .then ->
       unless program.rename
         # Means there will be a tag so lets make sure there's a tag message
@@ -159,6 +165,7 @@ Q.fcall(->
         else
           utils.prompt("Enter your tag message: ")
           .then (message) ->
+            console.log()
             tagMessage = message
     .then ->
       throw new Error "Invalid message." unless tagMessage or program.rename
@@ -167,9 +174,9 @@ Q.fcall(->
       if program.rename
         console.log " - rename all version occurences with " + "#{tagVersion}".green
       else
-        console.log " - tag " + "#{tagVersion}".green + " with message: " + "#{tagMessage}".green
-        console.log " - change the version to " + "#{nextDevVersion}".green + " afterwards"
-        console.log " - merge the tag to " + "master".green + " after" unless program.nomerge
+        console.log " - create tag " + "#{tagVersion}".green + " with message: " + "#{tagMessage}".green
+        console.log " - change the version to " + "#{nextDevVersion}".green
+        console.log " - merge the tag " + "#{tagVersion}".green + " to " + "master".green unless program.nomerge
         console.log " - push --all and --tags" unless program.nopush
 
       console.log "(Beware that you are on the branch " + "#{branch}".red.bold + "!)" if branch isnt "develop"
@@ -181,32 +188,46 @@ Q.fcall(->
       utils.confirm "Do you want to continue? "
     .then (doContinue) ->
       return console.log "Aborting." unless doContinue
-      console.log()
-      console.log "Replacing #{previousVersion} with #{tagVersion}."
+      separate()
+      console.log "#{previousVersion}".green + " => ".blue + "#{tagVersion}".green + " and committing the change.".blue
       config.replaceVersion infos, tagVersion
     .then ->
       return true if program.rename
-      console.log "Committing the change."
+      console.log()
       utils.command "git", "commit", "-am", "Upgrading version to #{tagVersion}"
     .then ->
-      console.log "Tagging the commit with " + "#{tagMessage}".green + "."
+      separate "-"
+      console.log "Creating tag ".blue + "#{tagVersion}".green + " with message ".blue + "#{tagMessage}".green + ".".blue
       utils.command "git", "tag", "-a", tagVersion, "-m", tagMessage.replace(/\"/, '\\"')
     .then ->
-      console.log "Tagging the commit with " + "#{tagMessage}".green + "."
-      utils.command "git", "tag", "-a", tagVersion, "-m", tagMessage
+      separate "-"
+      console.log "#{tagVersion}".green + " => ".blue + "#{nextDevVersion}".green + " and committing the change.".blue
+      config.replaceVersion infos, nextDevVersion
+    .then ->
+      console.log()
+      utils.command "git", "commit", "-am", "Upgrading version to #{nextDevVersion}"
     .then ->
       unless program.nomerge
-        console.log "Checking out master."
+        separate "-"
+        console.log "Merging tag #{tagVersion} to master.".blue
         utils.command("git", "checkout", "master")
         .then ->
-          console.log "Merging #{tagVersion}."
+          console.log()
           utils.command("git", "merge", "--no-ff", tagVersion)
         .then ->
-          console.log "Checking out #{branch} again."
+          console.log()
           utils.command("git", "checkout", branch)
     .then ->
-      console.log "Tagging the commit with " + "#{tagMessage}".green + "."
-      
+      unless program.nopush
+        separate "-"
+        console.log "Pushing --all and --tag".blue
+        utils.command("git", "push", "-v", "--all")
+        .then ->
+          utils.command("git", "push", "-v", "--tags")
+    .then ->
+      separate "-"
+      console.log()
+      console.log "Success".green
 
 
 
@@ -220,38 +241,6 @@ Q.fcall(->
   console.log "Error: ".red.bold + err.message.red
   console.log()
   process.exit 1
-
-
-
-
-
-# console.log "dev", program.dev
-
-# console.log ' args: %j', program.args
-
-
-# fs = require("fs")
-# possibleConfigFileUris = [ "./.tagconfig.json", "./.tagconfig", "./tagconfig.json", "./tagconfig" ]
-# configFileUri = undefined
-# previousVersion = undefined
-# nextVersion = undefined
-# nextDevVersion = undefined
-# tagName = undefined
-
-
-# color = require "./color"
-
-
-
-
-# utils.prompt("Are you fine: ")
-# .then (response) ->
-#   utils.confirm "Sure?: "
-# .then (response) ->
-#   utils.choose [ "bla", "bli" ]
-# .then (response) ->
-#   console.log  "bla", response
-  
 
 
 
