@@ -3,6 +3,7 @@ Q = require "q"
 util = require "util"
 spawn = require("child_process").spawn
 commander = require "commander"
+fs = require "fs"
 
 versionRegex = "[0-9]+\\.[0-9]+\\.[0-9]+(?:-dev)?"
 
@@ -35,3 +36,17 @@ exports.increaseLastVersion = (string) ->
   splitVersion = string.split(".")
   splitVersion[2]++
   splitVersion.join "."
+
+
+
+# Since aparently ninvoke doesn't work with filewrites
+exports.writeFile = (filename, data) ->
+  deferred = Q.defer()
+
+  fs.writeFile filename, data, "utf8", (err) ->
+    if err?
+      deferred.reject err
+    else
+      deferred resolve()
+
+  deferred.promise
