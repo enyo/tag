@@ -73,7 +73,7 @@ After commiting this version, the script automatically increases the version, an
 
 When calling `tag`, a typical output looks like this:
 
-![Output](http://i.imgur.com/CUQjF.png)
+![Output](http://i.imgur.com/sKOwL.png)
 
 
 ## License
