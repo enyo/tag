@@ -189,47 +189,47 @@ Q.fcall(->
       console.log()
       utils.confirm "Do you want to continue? "
     .then (doContinue) ->
-      return console.log "Aborting." unless doContinue
+      throw new Error "Aborting." unless doContinue
       separate()
-      console.log "#{previousVersion}".green + " => ".blue + "#{tagVersion}".green + " and committing the change.".blue
+      console.log "#{previousVersion}".green + " => ".blue + "#{tagVersion}".green + (if program.rename then ".".blue else " and committing the change.".blue)
       config.replaceVersion infos, tagVersion
     .then ->
       return true if program.rename
       console.log()
-      utils.command "git", "commit", "-am", "Upgrading version to #{tagVersion}"
-    .then ->
-      separate "-"
-      console.log "Creating tag ".blue + "#{tagVersion}".green + " with message ".blue + "#{tagMessage}".green + ".".blue
-      utils.command "git", "tag", "-a", tagVersion, "-m", tagMessage.replace(/\"/, '\\"')
-    .then ->
-      separate "-"
-      console.log "#{tagVersion}".green + " => ".blue + "#{nextDevVersion}".green + " and committing the change.".blue
-      config.replaceVersion infos, nextDevVersion
-    .then ->
-      console.log()
-      utils.command "git", "commit", "-am", "Upgrading version to #{nextDevVersion}"
-    .then ->
-      unless program.nomerge
+      utils.command("git", "commit", "-am", "Upgrading version to #{tagVersion}")
+      .then ->
         separate "-"
-        console.log "Merging tag #{tagVersion} to master.".blue
-        utils.command("git", "checkout", "master")
-        .then ->
-          unless program.nopull
+        console.log "Creating tag ".blue + "#{tagVersion}".green + " with message ".blue + "#{tagMessage}".green + ".".blue
+        utils.command "git", "tag", "-a", tagVersion, "-m", tagMessage.replace(/\"/, '\\"')
+      .then ->
+        separate "-"
+        console.log "#{tagVersion}".green + " => ".blue + "#{nextDevVersion}".green + " and committing the change.".blue
+        config.replaceVersion infos, nextDevVersion
+      .then ->
+        console.log()
+        utils.command "git", "commit", "-am", "Upgrading version to #{nextDevVersion}"
+      .then ->
+        unless program.nomerge
+          separate "-"
+          console.log "Merging tag #{tagVersion} to master.".blue
+          utils.command("git", "checkout", "master")
+          .then ->
+            unless program.nopull
+              console.log()
+              utils.command "git", "pull", "origin", "master" 
+          .then ->
             console.log()
-            utils.command "git", "pull", "origin", "master" 
-        .then ->
-          console.log()
-          utils.command "git", "merge", "--no-ff", tagVersion
-        .then ->
-          console.log()
-          utils.command "git", "checkout", branch
-    .then ->
-      unless program.nopush
-        separate "-"
-        console.log "Pushing --all and --tag".blue
-        utils.command("git", "push", "-v", "--all")
-        .then ->
-          utils.command("git", "push", "-v", "--tags")
+            utils.command "git", "merge", "--no-ff", tagVersion
+          .then ->
+            console.log()
+            utils.command "git", "checkout", branch
+      .then ->
+        unless program.nopush
+          separate "-"
+          console.log "Pushing --all and --tag".blue
+          utils.command("git", "push", "-v", "--all")
+          .then ->
+            utils.command("git", "push", "-v", "--tags")
     .then ->
       separate "-"
       console.log()
