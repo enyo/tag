@@ -5,9 +5,9 @@ A simple script based on node.js (without dependencies) to help correctly upgrad
 The ideas are:
 
 - I want to have at least one file that contains the actual version so it can be displayed and distributed easily.
-- Commits that represent development should be at a `X.Y.Z-dev` version. This way I always know when a program / library is in development.
+- Commits that represent development should always end with `-dev` (eg: `2.0.1-dev`). This way I always know when a program / library is in development.
 - There should always be **only one** commit that has the version `X.Y.Z`. When somebody uses a JS file of mine, or views a documentation where the version number is printed at the bottom, and the version is `X.Y.Z` (without `-dev`), s/he *knows* that this is the one and only `X.Y.Z` release, not some development phase that came after this release.
-- It is possible to configure this script so it updates multiple version occurences in multiple files. The version occurence can be the default `X.Y.Z(-dev)` pattern, or a complex regular expression. It's stored in the .tagconfig file.
+- It is possible to configure this script so it updates multiple version occurences in multiple files. The version occurence can be the default `X.Y.Z(-dev)` pattern, or a complex regular expression. It's stored in the `.tagconfig.json` file.
 
 
 
