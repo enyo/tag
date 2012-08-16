@@ -21,7 +21,7 @@ separate = (char = "=", length = 79) ->
 
 
 program
-  .version("2.0.4")
+  .version("2.0.5")
   .usage("[options]")
   .option("-t, --tag <version>", "the tag if not incremental")
   .option("-d, --dev <version>", "the version you want to use after the tag")
@@ -204,7 +204,7 @@ Q.fcall(->
       .then ->
         separate "-"
         console.log "Creating tag ".blue + "#{tagName}".green + " with message ".blue + "#{tagMessage}".green + ".".blue
-        utils.command "git", "tag", "-a", tagName, "-m", tagMessage.replace(/\"/, '\\"')
+        utils.command "git", "tag", "-a", tagName, "-m", tagMessage
       .then ->
         separate "-"
         console.log "#{tagVersion}".green + " => ".blue + "#{nextDevVersion}".green + " and committing the change.".blue
@@ -237,7 +237,7 @@ Q.fcall(->
     .then ->
       separate "-"
       console.log()
-      console.log "Success".green
+      console.log "Success :)".green
 
 
 
