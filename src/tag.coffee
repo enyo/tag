@@ -215,7 +215,7 @@ Q.fcall(->
       .then ->
         unless program.nomerge
           separate "-"
-          console.log "Merging tag #{tagVersion} to master.".blue
+          console.log "Merging tag #{tagName} to master.".blue
           utils.command("git", "checkout", "master")
           .then ->
             unless program.nopull
@@ -223,7 +223,7 @@ Q.fcall(->
               utils.command "git", "pull", "origin", "master" 
           .then ->
             console.log()
-            utils.command "git", "merge", "--no-ff", tagVersion
+            utils.command "git", "merge", "--no-ff", tagName
           .then ->
             console.log()
             utils.command "git", "checkout", branch
