@@ -237,7 +237,7 @@ Q.fcall(->
     .then ->
       separate "-"
       console.log()
-      console.log "Success".green
+      console.log "Success :)".green
 
 
 
