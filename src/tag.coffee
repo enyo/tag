@@ -21,7 +21,7 @@ separate = (char = "=", length = 79) ->
 
 
 program
-  .version("2.0.3")
+  .version("2.0.4")
   .usage("[options]")
   .option("-t, --tag <version>", "the tag if not incremental")
   .option("-d, --dev <version>", "the version you want to use after the tag")
@@ -90,6 +90,7 @@ Q.fcall(->
     infos = null
     previousVersion = null
     tagVersion = null
+    tagName = null # Has a v in front of it
     nextDevVersion = null
     tagMessage = null
 
@@ -142,6 +143,8 @@ Q.fcall(->
       else
         tagVersion = config.increaseVersion previousVersion
 
+      tagName = "v#{tagVersion}"
+
       # The next dev version
       if program.dev
         nextDevVersion = program.dev
@@ -155,6 +158,7 @@ Q.fcall(->
         console.log "Next version:     " + tagVersion.green
       else
         console.log "Tag version:      " + tagVersion.green
+        console.log "Tag name:        " + tagName.green
         console.log "Next dev version: " + nextDevVersion.blue
 
       separate "=", 35
@@ -179,9 +183,9 @@ Q.fcall(->
       if program.rename
         console.log " - rename all version occurences with " + "#{tagVersion}".green
       else
-        console.log " - create tag " + "#{tagVersion}".green + " with message: " + "#{tagMessage}".green
+        console.log " - create tag " + "#{tagName}".green + " with message: " + "#{tagMessage}".green
         console.log " - change the version to " + "#{nextDevVersion}".green
-        console.log " - merge the tag " + "#{tagVersion}".green + " to " + "master".green unless program.nomerge
+        console.log " - merge the tag " + "#{tagName}".green + " to " + "master".green unless program.nomerge
         console.log " - push --all and --tags" unless program.nopush
 
       console.log "(Beware that you are on the branch " + "#{branch}".red.bold + "!)" if branch isnt "develop"
@@ -199,8 +203,8 @@ Q.fcall(->
       utils.command("git", "commit", "-am", "Upgrading version to #{tagVersion}")
       .then ->
         separate "-"
-        console.log "Creating tag ".blue + "#{tagVersion}".green + " with message ".blue + "#{tagMessage}".green + ".".blue
-        utils.command "git", "tag", "-a", tagVersion, "-m", tagMessage.replace(/\"/, '\\"')
+        console.log "Creating tag ".blue + "#{tagName}".green + " with message ".blue + "#{tagMessage}".green + ".".blue
+        utils.command "git", "tag", "-a", tagName, "-m", tagMessage.replace(/\"/, '\\"')
       .then ->
         separate "-"
         console.log "#{tagVersion}".green + " => ".blue + "#{nextDevVersion}".green + " and committing the change.".blue
@@ -211,7 +215,7 @@ Q.fcall(->
       .then ->
         unless program.nomerge
           separate "-"
-          console.log "Merging tag #{tagVersion} to master.".blue
+          console.log "Merging tag #{tagName} to master.".blue
           utils.command("git", "checkout", "master")
           .then ->
             unless program.nopull
@@ -219,7 +223,7 @@ Q.fcall(->
               utils.command "git", "pull", "origin", "master" 
           .then ->
             console.log()
-            utils.command "git", "merge", "--no-ff", tagVersion
+            utils.command "git", "merge", "--no-ff", tagName
           .then ->
             console.log()
             utils.command "git", "checkout", branch
