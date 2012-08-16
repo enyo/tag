@@ -204,7 +204,7 @@ Q.fcall(->
       .then ->
         separate "-"
         console.log "Creating tag ".blue + "#{tagName}".green + " with message ".blue + "#{tagMessage}".green + ".".blue
-        utils.command "git", "tag", "-a", tagName, "-m", tagMessage.replace(/\"/, '\\"')
+        utils.command "git", "tag", "-a", tagName, "-m", tagMessage
       .then ->
         separate "-"
         console.log "#{tagVersion}".green + " => ".blue + "#{nextDevVersion}".green + " and committing the change.".blue
