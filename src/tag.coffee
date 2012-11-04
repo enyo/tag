@@ -21,7 +21,7 @@ separate = (char = "=", length = 79) ->
 
 
 program
-  .version("2.0.5")
+  .version("2.0.6")
   .usage("[options]")
   .option("-t, --tag <version>", "the tag if not incremental")
   .option("-d, --dev <version>", "the version you want to use after the tag")
@@ -200,7 +200,7 @@ Q.fcall(->
     .then ->
       return true if program.rename
       console.log()
-      utils.command("git", "commit", "-am", "Upgrading version to #{tagVersion}")
+      utils.command("git", "commit", "-am", "Upgrading version to #{tagVersion} (#{tagMessage})")
       .then ->
         separate "-"
         console.log "Creating tag ".blue + "#{tagName}".green + " with message ".blue + "#{tagMessage}".green + ".".blue
