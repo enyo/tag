@@ -200,7 +200,7 @@ Q.fcall(->
     .then ->
       return true if program.rename
       console.log()
-      utils.command("git", "commit", "-am", "Upgrading version to #{tagVersion}")
+      utils.command("git", "commit", "-am", "Upgrading version to #{tagVersion} (#{tagMessage})")
       .then ->
         separate "-"
         console.log "Creating tag ".blue + "#{tagName}".green + " with message ".blue + "#{tagMessage}".green + ".".blue
