@@ -21,7 +21,7 @@ separate = (char = "=", length = 79) ->
 
 
 program
-  .version("2.0.7")
+  .version("2.0.8-dev")
   .usage("[options]")
   .option("-t, --tag <version>", "the tag if not incremental")
   .option("-d, --dev <version>", "the version you want to use after the tag")
