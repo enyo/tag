@@ -60,7 +60,7 @@ class Config
           fileInfo =
             name: file.name
             uri: @getFileUri file.name
-          Q.ncall(fs.readFile, fs, fileInfo.uri, "utf8")
+          Q.ninvoke(fs, "readFile", fileInfo.uri, "utf8")
           .then (content) =>
             fileInfo.content = content
             # Now all regular expressions... Pheeea
@@ -91,7 +91,7 @@ class Config
         replacedContent = info.file.content
         for regexInfo in info.regexs
           replacedContent = replacedContent.replace regexInfo.completeRegex, '$1' + version + '$3'
-        Q.ncall fs.writeFile, fs, info.file.uri, replacedContent, 'utf8'
+        Q.ninvoke fs, "writeFile", info.file.uri, replacedContent, 'utf8'
     )
 
 
@@ -119,7 +119,7 @@ class Config
     @fileUri = @getFileUri @file
 
   save: ->
-    Q.ncall fs.writeFile, fs, @fileUri, JSON.stringify(@config, null, "  "), "utf8"
+    Q.ninvoke fs, "writeFile", @fileUri, JSON.stringify(@config, null, "  "), "utf8"
 
   add: (filename, regex) ->
     match = regex.match /###/g
