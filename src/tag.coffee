@@ -96,7 +96,7 @@ Q.fcall(->
 
     Q.fcall(->
       unless config.config?
-        throw new Error "No valid tagconfig file. Please see 'tag -h' on how to create one." 
+        throw new Error "No valid tagconfig file. Please type 'tag -a' to create one. See 'tag -h' for additional info." 
     )
     .then ->
       Q.ninvoke repo, "status"
