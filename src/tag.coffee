@@ -21,7 +21,7 @@ separate = (char = "=", length = 79) ->
 
 
 program
-  .version("2.0.7")
+  .version("2.0.8")
   .usage("[options]")
   .option("-t, --tag <version>", "the tag if not incremental")
   .option("-d, --dev <version>", "the version you want to use after the tag")
@@ -96,7 +96,7 @@ Q.fcall(->
 
     Q.fcall(->
       unless config.config?
-        throw new Error "No valid tagconfig file. Please see 'tag -h' on how to create one." 
+        throw new Error "No valid tagconfig file. Please type 'tag -a' to create one. See 'tag -h' for additional info." 
     )
     .then ->
       Q.ninvoke repo, "status"

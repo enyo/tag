@@ -1,7 +1,7 @@
 {
   "name": "versiontag",
   "description": "Replaces all occurences of tags, and tags the project with git.",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "author": "Matias Meno <m@tias.me>",
   "keywords": [ "version", "versioning", "tag", "semantic", "semantic versioning" ],
   "dependencies": {
